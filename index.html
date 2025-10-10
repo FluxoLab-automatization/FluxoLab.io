@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Webhook - Plataforma de Automacao</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc;
+            min-height: 100vh;
+        }
+        .token-display {
+            word-break: break-all;
+            background-color: #eef2ff;
+            border: 1px solid #c7d2fe;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900">
+    <div id="app-root" class="min-h-screen">
+        <!-- Login -->
+        <section id="login-screen" class="min-h-screen flex flex-col items-center justify-center px-4 py-10 bg-gradient-to-br from-indigo-600 via-indigo-500 to-purple-500">
+            <div class="w-full max-w-md bg-white/95 shadow-2xl rounded-2xl p-8 space-y-6">
+                <div class="text-center space-y-2">
+                    <div class="inline-flex items-center space-x-2">
+                        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-600 text-white font-bold">FL</span>
+                        <span class="text-2xl font-bold text-slate-800">FluxoLab</span>
+                    </div>
+                    <p class="text-sm text-slate-500">Construa automações visuais como no N8N, com colaboração em tempo real.</p>
+                </div>
+
+                <div id="login-error" class="hidden text-sm text-rose-500 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                    Erro ao autenticar. Verifique suas credenciais.
+                </div>
+
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-slate-600 mb-1">E-mail</label>
+                        <input type="email" id="email" name="email" required placeholder="voce@empresa.com"
+                               class="w-full rounded-lg border border-slate-300 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-slate-600 mb-1">Senha</label>
+                        <input type="password" id="password" name="password" required placeholder="••••••••"
+                               class="w-full rounded-lg border border-slate-300 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                        <label class="flex items-center space-x-2 text-slate-500">
+                            <input type="checkbox" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                            <span>Lembrar acesso</span>
+                        </label>
+                        <a href="#" class="text-indigo-600 hover:text-indigo-700">Esqueci minha senha</a>
+                    </div>
+
+                    <button type="submit" id="login-submit"
+                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-indigo-600/30 transition">
+                        Acessar plataforma
+                    </button>
+                </form>
+
+                <div class="text-center text-xs text-slate-400">
+                    Ao continuar você concorda com os <a href="#" class="text-indigo-500 hover:text-indigo-600 underline">Termos de Uso</a>.
+                </div>
+            </div>
+        </section>
+
+        <!-- Workspace -->
+        <section id="workspace-screen" class="hidden min-h-screen bg-slate-100">
+            <!-- Top bar -->
+            <header class="bg-white shadow-sm">
+                <div class="max-w-screen-2xl mx-auto px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-600 text-white font-bold">FL</span>
+                        <div>
+                            <p class="text-lg font-semibold text-slate-800">FluxoLab</p>
+                            <p class="text-xs text-slate-500">Plataforma de automação visual</p>
+                        </div>
+                    </div>
+
+                    <nav class="flex items-center space-x-2 text-sm font-medium">
+                        <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white shadow">Construir</button>
+                        <button class="px-4 py-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100">Configurações</button>
+                        <button class="px-4 py-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100">Publicar</button>
+                    </nav>
+
+                    <div class="flex items-center space-x-4 text-sm">
+                        <button class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200">
+                            <span class="text-slate-600">Ajuda</span>
+                        </button>
+                        <div class="hidden md:flex flex-col items-end leading-tight">
+                            <span class="text-sm font-semibold text-slate-700" id="user-display-name">Usuário Fluxo</span>
+                            <span class="text-xs text-slate-400" id="user-display-email">usuario@empresa.com</span>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute -top-1 -right-1 text-xs bg-rose-500 text-white rounded-full px-1">2</span>
+                            <button class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">
+                                <span class="text-slate-600 font-semibold" id="user-avatar-initials">US</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-200 bg-slate-50">
+                    <div class="max-w-screen-2xl mx-auto px-6 py-3 flex items-center justify-between text-sm">
+                        <div class="flex items-center space-x-2">
+                            <button class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">
+                                <span>⟲</span><span>Desfazer</span>
+                            </button>
+                            <button class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">
+                                <span>⟳</span><span>Refazer</span>
+                            </button>
+                            <div class="flex items-center space-x-4 pl-4 border-l border-slate-200 text-slate-500">
+                                <span>Projeto: <strong class="text-slate-700">Fluxo de Onboarding</strong></span>
+                                <span>Status: <strong class="text-emerald-600" id="workspace-status" data-default="Em construção">Em construção</strong></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">Compartilhar</button>
+                            <button class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Executar teste</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="max-w-screen-2xl mx-auto px-4 py-6 space-y-6">
+                <section id="workspace-capabilities" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"></section>
+
+                <section class="grid grid-cols-1 md:grid-cols-3 gap-4" id="metrics-cards">
+                    <article class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col space-y-3">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Webhooks ativos</div>
+                        <div class="text-3xl font-bold text-slate-900" id="metric-total-webhooks">0</div>
+                        <p class="text-sm text-slate-500">Total de URLs geradas e verificadas prontas para receber eventos.</p>
+                    </article>
+                    <article class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col space-y-3">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Eventos recebidos</div>
+                        <div class="text-3xl font-bold text-slate-900" id="metric-total-events">0</div>
+                        <p class="text-sm text-slate-500">Mensagens, aprovações e alertas processados nas últimas integrações.</p>
+                    </article>
+                    <article class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col space-y-3">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Projetos</div>
+                        <div class="text-3xl font-bold text-slate-900" id="metric-total-projects">0</div>
+                        <p class="text-sm text-slate-500">Fluxos em andamento ou modelos salvos para colaborar com a equipe.</p>
+                    </article>
+                </section>
+
+                <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-slate-800">Seus projetos recentes</h2>
+                            <p class="text-sm text-slate-500">Acesse rapidamente os fluxos que você abriu nos últimos dias.</p>
+                        </div>
+                        <button class="hidden sm:inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow">
+                            <span>+ Novo projeto</span>
+                        </button>
+                    </div>
+                    <div class="px-6 pb-6">
+                        <div id="projects-empty" class="hidden border border-dashed border-indigo-200 rounded-xl p-6 text-center space-y-3">
+                            <p class="text-base font-semibold text-slate-700">Nenhum projeto criado ainda</p>
+                            <p class="text-sm text-slate-500">Use um template pronto para acelerar o primeiro fluxo ou comece com uma tela em branco.</p>
+                            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                                <button class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">Criar do zero</button>
+                                <button class="px-4 py-2 rounded-xl border border-indigo-200 text-indigo-600 text-sm font-semibold hover:bg-indigo-50">Explorar templates</button>
+                            </div>
+                        </div>
+                        <div id="projects-list" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                            <article class="skeleton-card h-32 rounded-xl"></article>
+                            <article class="skeleton-card h-32 rounded-xl"></article>
+                            <article class="skeleton-card h-32 rounded-xl"></article>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)_20rem]">
+                    <aside class="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                        <div class="px-4 py-3 border-b border-slate-200">
+                            <p class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Elementos de Aprovação</p>
+                        </div>
+                        <div class="flex-1 overflow-y-auto">
+                            <nav class="space-y-1 py-3">
+                                <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wide">Elementos Básicos</p>
+                                <button class="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-slate-100">
+                                    <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">📝</span>
+                                    <span>Formulário</span>
+                                </button>
+                                <button class="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-slate-100">
+                                    <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">✉️</span>
+                                    <span>E-mail</span>
+                                </button>
+                                <button class="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-slate-100">
+                                    <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-100 text-amber-600">✅</span>
+                                    <span>Aprovar & Assinar</span>
+                                </button>
+                                <button class="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-slate-100">
+                                    <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-600">👥</span>
+                                    <span>Aprovação em Equipe</span>
+                                </button>
+                                <p class="px-4 pt-4 text-xs font-semibold text-slate-500 uppercase tracking-wide">Lógica</p>
+                                <button class="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-slate-100">
+                                    <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">↔️</span>
+                                    <span>Condição Se/Então</span>
+                                </button>
+                                <button class="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-slate-100">
+                                    <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">🌿</span>
+                                    <span>Ramo Condicional</span>
+                                </button>
+                                <button class="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-slate-100">
+                                    <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-100 text-rose-600">⚡</span>
+                                    <span>Acionador Externo</span>
+                                </button>
+                            </nav>
+                        </div>
+                        <div class="px-4 py-3 border-t border-slate-200 text-xs text-slate-500">
+                            <p>Dica: arraste elementos para a área de trabalho para construir seu fluxo.</p>
+                        </div>
+                    </aside>
+
+                    <section class="bg-slate-900 rounded-3xl border border-indigo-500/40 shadow-inner relative overflow-hidden">
+                        <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.25),transparent_65%)]"></div>
+                        <div class="relative p-6 space-y-5 text-slate-200">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold">Mapa do fluxo atual</h3>
+                                    <p class="text-sm text-slate-400">Visualize como cada tarefa compartilha dados com a próxima etapa.</p>
+                                </div>
+                                <button class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-indigo-500/80 hover:bg-indigo-500 text-white text-sm font-semibold">
+                                    <span>Simular execução</span>
+                                </button>
+                            </div>
+                            <div id="flow-canvas" class="relative h-[520px] rounded-2xl border border-indigo-500/40 bg-slate-900/70 overflow-hidden"></div>
+                            <div id="flow-logic-details" class="grid gap-4 md:grid-cols-2 text-sm text-slate-300"></div>
+                        </div>
+                    </section>
+
+                    <aside class="hidden xl:flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200">
+                        <div class="px-5 py-4 border-b border-slate-200">
+                            <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Atividade recente</h3>
+                        </div>
+                        <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4" id="activity-list">
+                            <p class="text-sm text-slate-500">Sincronizando sua atividade...</p>
+                        </div>
+                        <div class="px-5 py-4 border-t border-slate-200">
+                            <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Eventos de Webhook</h3>
+                            <ul class="mt-3 space-y-2 text-sm text-slate-600" id="event-list">
+                                <li class="text-slate-500">Carregando eventos...</li>
+                            </ul>
+                        </div>
+                    </aside>
+                </section>
+            </main>
+        </section>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+</body>
+</html>
+
