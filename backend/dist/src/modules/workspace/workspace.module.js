@@ -25,6 +25,8 @@ const workspace_integrations_repository_1 = require("./repositories/workspace-in
 const workspace_usage_repository_1 = require("./repositories/workspace-usage.repository");
 const workspace_settings_service_1 = require("./workspace-settings.service");
 const workspace_provisioning_service_1 = require("./workspace-provisioning.service");
+const usage_analytics_service_1 = require("./services/usage-analytics.service");
+const plan_management_service_1 = require("./services/plan-management.service");
 let WorkspaceModule = class WorkspaceModule {
 };
 exports.WorkspaceModule = WorkspaceModule;
@@ -36,6 +38,8 @@ exports.WorkspaceModule = WorkspaceModule = __decorate([
             workspace_service_1.WorkspaceService,
             workspace_settings_service_1.WorkspaceSettingsService,
             workspace_provisioning_service_1.WorkspaceProvisioningService,
+            usage_analytics_service_1.UsageAnalyticsService,
+            plan_management_service_1.PlanManagementService,
             conversations_repository_1.ConversationsRepository,
             activities_repository_1.ActivitiesRepository,
             webhook_events_repository_1.WorkspaceWebhookRepository,
@@ -51,6 +55,8 @@ exports.WorkspaceModule = WorkspaceModule = __decorate([
             workspace_service_1.WorkspaceService,
             workspace_settings_service_1.WorkspaceSettingsService,
             workspace_provisioning_service_1.WorkspaceProvisioningService,
+            usage_analytics_service_1.UsageAnalyticsService,
+            plan_management_service_1.PlanManagementService,
             workspaces_repository_1.WorkspacesRepository,
             workspace_environments_repository_1.WorkspaceEnvironmentsRepository,
             workspace_api_keys_repository_1.WorkspaceApiKeysRepository,

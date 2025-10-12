@@ -4,7 +4,9 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useSessionStore } from '../stores/session.store';
-import { fetchSettingsSummary } from '../services/settings.service';
+import { fetchSettingsSummary, fetchUsageAlerts } from '../services/settings.service';
+import UsageChart from '../components/settings/UsageChart.vue';
+import PlanUpgrade from '../components/settings/PlanUpgrade.vue';
 import type {
   SettingsSummary,
   FeatureGateInfo,
@@ -44,6 +46,13 @@ const loadingSummary = ref(false);
 const summaryError = ref<string | null>(null);
 const summary = ref<SettingsSummary | null>(null);
 const apiKeys = ref<WorkspaceApiKey[]>([]);
+
+// Usage and Plan Management
+const showUpgradeModal = ref(false);
+const showCancelModal = ref(false);
+const showAlertModal = ref(false);
+const usageAlerts = ref<any[]>([]);
+const loadingAlerts = ref(false);
 
 const DEFAULT_PLAN: SettingsSummary['plan'] = {
   planCode: 'free',
@@ -165,10 +174,64 @@ watch(token, (newToken) => {
   }
 });
 
+async function loadUsageAlerts() {
+  if (!token.value) return;
+
+  loadingAlerts.value = true;
+  try {
+    const response = await fetchUsageAlerts();
+    usageAlerts.value = response.alerts || [];
+  } catch (error) {
+    console.error('Failed to load usage alerts:', error);
+  } finally {
+    loadingAlerts.value = false;
+  }
+}
+
+function handleChartPeriodChange(period: string) {
+  console.log('Chart period changed to:', period);
+  // Handle period change for all charts
+}
+
+function handleUpgradeSuccess(plan: any) {
+  showUpgradeModal.value = false;
+  // Reload summary to get updated plan info
+  loadSummary();
+  // Show success message
+}
+
+function handleUpgradeError(error: string) {
+  console.error('Upgrade failed:', error);
+  // Show error message
+}
+
+function editAlert(alert: any) {
+  // Open alert editing modal
+  console.log('Edit alert:', alert);
+}
+
+function deleteAlert(alertId: string) {
+  // Delete alert
+  console.log('Delete alert:', alertId);
+}
+
+async function cancelSubscription() {
+  try {
+    // Call cancel subscription API
+    console.log('Cancelling subscription...');
+    showCancelModal.value = false;
+    // Show success message
+  } catch (error) {
+    console.error('Failed to cancel subscription:', error);
+    // Show error message
+  }
+}
+
 onMounted(async () => {
   await ensureSessionReady();
   if (token.value) {
     void loadSummary();
+    void loadUsageAlerts();
   }
 });
 
@@ -370,7 +433,14 @@ async function handleCreateApiKey() {
             <h2>Uso e plano</h2>
             <p>Resumo de consumo e limites em vigor.</p>
           </div>
+          <div class="settings-section__actions">
+            <button @click="showUpgradeModal = true" class="btn btn--primary">
+              Upgrade de Plano
+            </button>
+          </div>
         </header>
+
+        <!-- Usage Statistics -->
         <div class="settings-grid settings-grid--stats">
           <article v-for="indicator in usageIndicators" :key="indicator.label" class="settings-stat">
             <h3>{{ indicator.label }}</h3>
@@ -378,6 +448,30 @@ async function handleCreateApiKey() {
             <span class="settings-stat__meta">{{ indicator.hint }}</span>
           </article>
         </div>
+
+        <!-- Usage Charts -->
+        <div class="usage-charts">
+          <UsageChart
+            metric="webhooks"
+            title="Eventos de Webhook"
+            color="#6366f1"
+            @period-change="handleChartPeriodChange"
+          />
+          <UsageChart
+            metric="users"
+            title="Usuários Ativos"
+            color="#10b981"
+            @period-change="handleChartPeriodChange"
+          />
+          <UsageChart
+            metric="workflows"
+            title="Workflows Ativos"
+            color="#f59e0b"
+            @period-change="handleChartPeriodChange"
+          />
+        </div>
+
+        <!-- Current Plan Info -->
         <div class="settings-card settings-card--plan">
           <div>
             <h3>Plano atual: {{ currentPlan.name }}</h3>
@@ -392,6 +486,41 @@ async function handleCreateApiKey() {
             <p v-if="currentPlan.trialEndsAt" class="settings-muted">
               Trial ativo ate {{ formatDate(currentPlan.trialEndsAt) }}
             </p>
+            <div class="plan-actions">
+              <button @click="showUpgradeModal = true" class="btn btn--primary btn--sm">
+                Fazer Upgrade
+              </button>
+              <button @click="showCancelModal = true" class="btn btn--secondary btn--sm">
+                Cancelar Assinatura
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Usage Alerts -->
+        <div class="usage-alerts">
+          <h3>Alertas de Uso</h3>
+          <div v-if="usageAlerts.length === 0" class="no-alerts">
+            <p>Nenhum alerta configurado.</p>
+            <button @click="showAlertModal = true" class="btn btn--secondary btn--sm">
+              Configurar Alertas
+            </button>
+          </div>
+          <div v-else class="alerts-list">
+            <div v-for="alert in usageAlerts" :key="alert.id" class="alert-item">
+              <div class="alert-info">
+                <h4>{{ alert.metric }}</h4>
+                <p>{{ alert.description }}</p>
+              </div>
+              <div class="alert-actions">
+                <button @click="editAlert(alert)" class="btn btn--secondary btn--sm">
+                  Editar
+                </button>
+                <button @click="deleteAlert(alert.id)" class="btn btn--danger btn--sm">
+                  Remover
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -628,6 +757,41 @@ async function handleCreateApiKey() {
         </div>
       </section>
     </main>
+
+    <!-- Upgrade Plan Modal -->
+    <div v-if="showUpgradeModal" class="modal-overlay" @click="showUpgradeModal = false">
+      <div class="modal-content modal-content--large" @click.stop>
+        <div class="modal-header">
+          <h3>Upgrade de Plano</h3>
+          <button @click="showUpgradeModal = false" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <PlanUpgrade
+            :current-plan="currentPlan"
+            @upgrade-success="handleUpgradeSuccess"
+            @upgrade-error="handleUpgradeError"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Cancel Subscription Modal -->
+    <div v-if="showCancelModal" class="modal-overlay" @click="showCancelModal = false">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>Cancelar Assinatura</h3>
+          <button @click="showCancelModal = false" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Tem certeza que deseja cancelar sua assinatura?</p>
+          <p>Você continuará com acesso até o final do período atual.</p>
+        </div>
+        <div class="modal-footer">
+          <button @click="showCancelModal = false" class="btn btn--secondary">Manter Assinatura</button>
+          <button @click="cancelSubscription" class="btn btn--danger">Cancelar Assinatura</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1000,6 +1164,260 @@ code {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.6rem;
+  }
+}
+
+/* Additional styles for new components */
+.settings-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.settings-section__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Usage Charts */
+.usage-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Plan Actions */
+.plan-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.btn {
+  border: 1px solid transparent;
+  border-radius: 0.7rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn--primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #f8fafc;
+  box-shadow: 0 12px 28px rgba(99, 102, 241, 0.35);
+}
+
+.btn--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(99, 102, 241, 0.4);
+}
+
+.btn--secondary {
+  background: rgba(79, 70, 229, 0.18);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #c7d2fe;
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: rgba(79, 70, 229, 0.25);
+}
+
+.btn--danger {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fecaca;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.btn--sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Usage Alerts */
+.usage-alerts {
+  background: rgba(15, 23, 42, 0.78);
+  border-radius: 0.9rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.36);
+  margin-top: 1.5rem;
+}
+
+.usage-alerts h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin-bottom: 1rem;
+}
+
+.no-alerts {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(148, 163, 184, 0.75);
+}
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.alert-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(10, 18, 32, 0.92);
+  border-radius: 0.6rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.alert-info h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0 0 0.25rem 0;
+}
+
+.alert-info p {
+  color: rgba(148, 163, 184, 0.85);
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.alert-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 0.8rem;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.modal-content--large {
+  max-width: 900px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.modal-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: rgba(148, 163, 184, 0.85);
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: #f8fafc;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  justify-content: flex-end;
+}
+
+.modal-footer .btn {
+  width: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .usage-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-section__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .settings-section__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .plan-actions {
+    flex-direction: column;
+  }
+
+  .alert-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .alert-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 </style>

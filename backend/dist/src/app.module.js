@@ -18,6 +18,8 @@ const workspace_module_1 = require("./modules/workspace/workspace.module");
 const webhooks_module_1 = require("./modules/webhooks/webhooks.module");
 const database_module_1 = require("./shared/database/database.module");
 const security_module_1 = require("./shared/security/security.module");
+const monitoring_module_1 = require("./modules/monitoring/monitoring.module");
+const mcp_module_1 = require("./modules/mcp/mcp.module");
 const app_controller_1 = require("./app.controller");
 let AppModule = class AppModule {
 };
@@ -63,6 +65,8 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             workspace_module_1.WorkspaceModule,
             webhooks_module_1.WebhooksModule,
+            monitoring_module_1.MonitoringModule,
+            mcp_module_1.McpModule,
         ],
         controllers: [app_controller_1.AppController],
     })

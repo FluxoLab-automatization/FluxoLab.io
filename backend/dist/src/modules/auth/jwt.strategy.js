@@ -29,11 +29,17 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         this.usersRepository = usersRepository;
     }
     async validate(payload) {
-        const user = await this.usersRepository.findById(payload.sub);
-        if (!user) {
-            throw new common_1.UnauthorizedException('Token inválido ou expirado.');
+        try {
+            const user = await this.usersRepository.findById(payload.sub);
+            if (!user)
+                throw new common_1.UnauthorizedException('Token inválido ou expirado.');
+            return (0, auth_mapper_1.mapToAuthenticatedUser)(user);
         }
-        return (0, auth_mapper_1.mapToAuthenticatedUser)(user);
+        catch (e) {
+            if (e instanceof common_1.UnauthorizedException || e instanceof common_1.UnprocessableEntityException)
+                throw e;
+            throw new common_1.UnauthorizedException('Falha na validação do token/perfil.');
+        }
     }
 };
 exports.JwtStrategy = JwtStrategy;

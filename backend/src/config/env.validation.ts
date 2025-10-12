@@ -25,6 +25,35 @@ export const envSchema = z
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
     CORS_ORIGINS: z.string().optional(),
     BCRYPT_SALT_ROUNDS: z.coerce.number().int().positive().default(10),
+    
+    // New configurations for improved features
+    REDIS_URL: z.string().url().optional(),
+    REDIS_PASSWORD: z.string().optional(),
+    
+    // Monitoring and observability
+    SENTRY_DSN: z.string().url().optional(),
+    LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+    
+    // Email configuration
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.coerce.number().int().positive().optional(),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASSWORD: z.string().optional(),
+    SMTP_FROM: z.string().email().optional(),
+    
+    // File storage
+    AWS_ACCESS_KEY_ID: z.string().optional(),
+    AWS_SECRET_ACCESS_KEY: z.string().optional(),
+    AWS_REGION: z.string().default('us-east-1'),
+    AWS_S3_BUCKET: z.string().optional(),
+    
+    // Feature flags
+    ENABLE_SWAGGER: z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
+    ENABLE_METRICS: z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
+    
+    // MCP Configuration
+    MCP_SERVER_URL: z.string().url().optional(),
+    MCP_API_KEY: z.string().optional(),
   })
   .passthrough();
 

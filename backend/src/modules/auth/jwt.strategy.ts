@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -22,11 +22,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
-    const user = await this.usersRepository.findById(payload.sub);
-    if (!user) {
-      throw new UnauthorizedException('Token inválido ou expirado.');
-    }
+    try {
+      const user = await this.usersRepository.findById(payload.sub);
+      if (!user) throw new UnauthorizedException('Token inválido ou expirado.');
 
-    return mapToAuthenticatedUser(user);
+      // mapper agora não lança numa falta de workspaceId
+      return mapToAuthenticatedUser(user);
+    } catch (e: any) {
+      // Evita 500 por Error genérica
+      if (e instanceof UnauthorizedException || e instanceof UnprocessableEntityException) throw e;
+      throw new UnauthorizedException('Falha na validação do token/perfil.');
+    }
   }
 }

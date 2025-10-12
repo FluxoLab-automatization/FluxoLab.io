@@ -16,6 +16,8 @@ import { WorkspaceIntegrationsRepository } from './repositories/workspace-integr
 import { WorkspaceUsageRepository } from './repositories/workspace-usage.repository';
 import { WorkspaceSettingsService } from './workspace-settings.service';
 import { WorkspaceProvisioningService } from './workspace-provisioning.service';
+import { UsageAnalyticsService } from './services/usage-analytics.service';
+import { PlanManagementService } from './services/plan-management.service';
 
 @Module({
   imports: [AuthModule, BillingModule],
@@ -24,6 +26,8 @@ import { WorkspaceProvisioningService } from './workspace-provisioning.service';
     WorkspaceService,
     WorkspaceSettingsService,
     WorkspaceProvisioningService,
+    UsageAnalyticsService,
+    PlanManagementService,
     ConversationsRepository,
     ActivitiesRepository,
     WorkspaceWebhookRepository,
@@ -39,6 +43,8 @@ import { WorkspaceProvisioningService } from './workspace-provisioning.service';
     WorkspaceService,
     WorkspaceSettingsService,
     WorkspaceProvisioningService,
+    UsageAnalyticsService,
+    PlanManagementService,
     WorkspacesRepository,
     WorkspaceEnvironmentsRepository,
     WorkspaceApiKeysRepository,

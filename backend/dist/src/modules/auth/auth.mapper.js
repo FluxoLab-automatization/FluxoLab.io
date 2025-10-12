@@ -4,6 +4,13 @@ exports.mapToAuthenticatedUser = mapToAuthenticatedUser;
 exports.mapToPresentedUser = mapToPresentedUser;
 exports.presentAuthenticatedUser = presentAuthenticatedUser;
 function mapToAuthenticatedUser(record) {
+    if (!record)
+        throw new Error('UserRecord indefinido');
+    const workspaceId = record.workspace_id ??
+        record.workspaceId ??
+        record.default_workspace_id ??
+        record.defaultWorkspaceId ??
+        null;
     return {
         id: record.id,
         email: record.email,
@@ -11,10 +18,16 @@ function mapToAuthenticatedUser(record) {
         avatarColor: record.avatar_color ?? '#6366F1',
         createdAt: record.created_at,
         updatedAt: record.updated_at,
-        lastLoginAt: record.last_login_at,
+        lastLoginAt: record.last_login_at ?? null,
+        workspaceId,
     };
 }
 function mapToPresentedUser(record) {
+    const workspaceId = record.workspace_id ??
+        record.workspaceId ??
+        record.default_workspace_id ??
+        record.defaultWorkspaceId ??
+        null;
     return {
         id: record.id,
         email: record.email,
@@ -22,7 +35,8 @@ function mapToPresentedUser(record) {
         avatarColor: record.avatar_color ?? '#6366F1',
         createdAt: record.created_at,
         updatedAt: record.updated_at,
-        lastLoginAt: record.last_login_at,
+        lastLoginAt: record.last_login_at ?? null,
+        workspaceId,
     };
 }
 function presentAuthenticatedUser(user) {
@@ -33,7 +47,8 @@ function presentAuthenticatedUser(user) {
         avatarColor: user.avatarColor ?? '#6366F1',
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
-        lastLoginAt: user.lastLoginAt,
+        lastLoginAt: user.lastLoginAt ?? null,
+        workspaceId: user.workspaceId ?? null,
     };
 }
 //# sourceMappingURL=auth.mapper.js.map

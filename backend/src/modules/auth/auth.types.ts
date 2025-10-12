@@ -1,19 +1,21 @@
-export interface AuthenticatedUser {
+export type AuthenticatedUser = {
   id: string;
   email: string;
   displayName: string;
-  avatarColor: string | null;
+  avatarColor?: string | null;
   createdAt: Date;
   updatedAt: Date;
-  lastLoginAt: Date | null;
-}
+  lastLoginAt?: Date | null;
+  workspaceId: string | null; // <- importante
+};
 
-export interface PresentedUser {
+export type PresentedUser = {
   id: string;
   email: string;
   displayName: string;
-  avatarColor: string | null;
+  avatarColor?: string | null;
   createdAt: Date;
   updatedAt: Date;
-  lastLoginAt: Date | null;
-}
+  lastLoginAt?: Date | null;
+  workspaceId: string | null; // <- importante
+};

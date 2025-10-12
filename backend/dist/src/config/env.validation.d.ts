@@ -25,6 +25,34 @@ export declare const envSchema: z.ZodObject<{
     RATE_LIMIT_MAX: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     CORS_ORIGINS: z.ZodOptional<z.ZodString>;
     BCRYPT_SALT_ROUNDS: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+    REDIS_URL: z.ZodOptional<z.ZodString>;
+    REDIS_PASSWORD: z.ZodOptional<z.ZodString>;
+    SENTRY_DSN: z.ZodOptional<z.ZodString>;
+    LOG_LEVEL: z.ZodDefault<z.ZodEnum<{
+        error: "error";
+        debug: "debug";
+        info: "info";
+        warn: "warn";
+    }>>;
+    SMTP_HOST: z.ZodOptional<z.ZodString>;
+    SMTP_PORT: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
+    SMTP_USER: z.ZodOptional<z.ZodString>;
+    SMTP_PASSWORD: z.ZodOptional<z.ZodString>;
+    SMTP_FROM: z.ZodOptional<z.ZodString>;
+    AWS_ACCESS_KEY_ID: z.ZodOptional<z.ZodString>;
+    AWS_SECRET_ACCESS_KEY: z.ZodOptional<z.ZodString>;
+    AWS_REGION: z.ZodDefault<z.ZodString>;
+    AWS_S3_BUCKET: z.ZodOptional<z.ZodString>;
+    ENABLE_SWAGGER: z.ZodPipe<z.ZodDefault<z.ZodEnum<{
+        true: "true";
+        false: "false";
+    }>>, z.ZodTransform<boolean, "true" | "false">>;
+    ENABLE_METRICS: z.ZodPipe<z.ZodDefault<z.ZodEnum<{
+        true: "true";
+        false: "false";
+    }>>, z.ZodTransform<boolean, "true" | "false">>;
+    MCP_SERVER_URL: z.ZodOptional<z.ZodString>;
+    MCP_API_KEY: z.ZodOptional<z.ZodString>;
 }, z.core.$loose>;
 export type AppConfig = z.infer<typeof envSchema>;
 export declare function validateEnv(config: Record<string, unknown>): AppConfig;

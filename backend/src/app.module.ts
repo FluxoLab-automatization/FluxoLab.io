@@ -9,6 +9,8 @@ import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { DatabaseModule } from './shared/database/database.module';
 import { SecurityModule } from './shared/security/security.module';
+import { MonitoringModule } from './modules/monitoring/monitoring.module';
+import { McpModule } from './modules/mcp/mcp.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -52,6 +54,8 @@ import { AppController } from './app.controller';
     AuthModule,
     WorkspaceModule,
     WebhooksModule,
+    MonitoringModule,
+    McpModule,
   ],
   controllers: [AppController],
 })

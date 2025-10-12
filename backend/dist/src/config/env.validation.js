@@ -28,6 +28,23 @@ exports.envSchema = zod_1.z
     RATE_LIMIT_MAX: zod_1.z.coerce.number().int().positive().default(120),
     CORS_ORIGINS: zod_1.z.string().optional(),
     BCRYPT_SALT_ROUNDS: zod_1.z.coerce.number().int().positive().default(10),
+    REDIS_URL: zod_1.z.string().url().optional(),
+    REDIS_PASSWORD: zod_1.z.string().optional(),
+    SENTRY_DSN: zod_1.z.string().url().optional(),
+    LOG_LEVEL: zod_1.z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+    SMTP_HOST: zod_1.z.string().optional(),
+    SMTP_PORT: zod_1.z.coerce.number().int().positive().optional(),
+    SMTP_USER: zod_1.z.string().optional(),
+    SMTP_PASSWORD: zod_1.z.string().optional(),
+    SMTP_FROM: zod_1.z.string().email().optional(),
+    AWS_ACCESS_KEY_ID: zod_1.z.string().optional(),
+    AWS_SECRET_ACCESS_KEY: zod_1.z.string().optional(),
+    AWS_REGION: zod_1.z.string().default('us-east-1'),
+    AWS_S3_BUCKET: zod_1.z.string().optional(),
+    ENABLE_SWAGGER: zod_1.z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
+    ENABLE_METRICS: zod_1.z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
+    MCP_SERVER_URL: zod_1.z.string().url().optional(),
+    MCP_API_KEY: zod_1.z.string().optional(),
 })
     .passthrough();
 function validateEnv(config) {
