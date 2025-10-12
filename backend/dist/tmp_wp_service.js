@@ -8,16 +8,15 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b, _c, _d, _e, _f;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WorkspaceProvisioningService = void 0;
 const common_1 = require("@nestjs/common");
-const plans_repository_1 = require("../billing/repositories/plans.repository");
-const subscriptions_repository_1 = require("../billing/repositories/subscriptions.repository");
-const workspaces_repository_1 = require("./repositories/workspaces.repository");
-const workspace_members_repository_1 = require("./repositories/workspace-members.repository");
-const workspace_settings_repository_1 = require("./repositories/workspace-settings.repository");
-const profiles_repository_1 = require("../auth/profiles.repository");
+const plans_repository_1 = require("./src/modules/billing/repositories/plans.repository");
+const subscriptions_repository_1 = require("./src/modules/billing/repositories/subscriptions.repository");
+const workspaces_repository_1 = require("./src/modules/workspace/repositories/workspaces.repository");
+const workspace_members_repository_1 = require("./src/modules/workspace/repositories/workspace-members.repository");
+const workspace_settings_repository_1 = require("./src/modules/workspace/repositories/workspace-settings.repository");
+const profiles_repository_1 = require("./src/modules/auth/profiles.repository");
 let WorkspaceProvisioningService = class WorkspaceProvisioningService {
     plansRepository;
     subscriptionsRepository;
@@ -65,9 +64,7 @@ let WorkspaceProvisioningService = class WorkspaceProvisioningService {
             workspaceId: workspace.id,
             planId: plan.id,
             trialDays: plan.trialDays,
-            metadata: {
-                planCode: plan.code,
-            },
+            metadata: { planCode: plan.code },
         });
         return { workspace, subscription, plan };
     }
@@ -75,6 +72,11 @@ let WorkspaceProvisioningService = class WorkspaceProvisioningService {
 exports.WorkspaceProvisioningService = WorkspaceProvisioningService;
 exports.WorkspaceProvisioningService = WorkspaceProvisioningService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [typeof (_a = typeof plans_repository_1.PlansRepository !== "undefined" && plans_repository_1.PlansRepository) === "function" ? _a : Object, typeof (_b = typeof subscriptions_repository_1.SubscriptionsRepository !== "undefined" && subscriptions_repository_1.SubscriptionsRepository) === "function" ? _b : Object, typeof (_c = typeof workspaces_repository_1.WorkspacesRepository !== "undefined" && workspaces_repository_1.WorkspacesRepository) === "function" ? _c : Object, typeof (_d = typeof workspace_members_repository_1.WorkspaceMembersRepository !== "undefined" && workspace_members_repository_1.WorkspaceMembersRepository) === "function" ? _d : Object, typeof (_e = typeof workspace_settings_repository_1.WorkspaceSettingsRepository !== "undefined" && workspace_settings_repository_1.WorkspaceSettingsRepository) === "function" ? _e : Object, typeof (_f = typeof profiles_repository_1.ProfilesRepository !== "undefined" && profiles_repository_1.ProfilesRepository) === "function" ? _f : Object])
+    __metadata("design:paramtypes", [plans_repository_1.PlansRepository,
+        subscriptions_repository_1.SubscriptionsRepository,
+        workspaces_repository_1.WorkspacesRepository,
+        workspace_members_repository_1.WorkspaceMembersRepository,
+        workspace_settings_repository_1.WorkspaceSettingsRepository,
+        profiles_repository_1.ProfilesRepository])
 ], WorkspaceProvisioningService);
 //# sourceMappingURL=tmp_wp_service.js.map

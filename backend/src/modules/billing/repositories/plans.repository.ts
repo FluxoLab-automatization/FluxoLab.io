@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../../shared/database/database.service';
+import { Injectable } from '@nestjs/common'; 
+import { DatabaseService } from '../../../shared/database/database.service'
 
 interface PlanRow {
   id: string;
@@ -130,5 +130,37 @@ export class PlansRepository {
     const plan = result.rows[0];
     return plan ? this.normalizePlan(plan) : null;
   }
+
+  async findById(id: string): Promise<WorkspacePlan | null> {
+    const result = await this.pool.query<PlanRow>(
+      `
+        SELECT p.id,
+               p.code,
+               p.name,
+               p.description,
+               p.price_amount::text AS price_amount,
+               p.currency,
+               p.billing_interval,
+               p.trial_days,
+               p.is_active,
+               p.metadata,
+               p.created_at,
+               p.updated_at,
+               COALESCE(
+                 jsonb_object_agg(f.feature_key, f.feature_value)
+                   FILTER (WHERE f.feature_key IS NOT NULL),
+                 '{}'::jsonb
+               ) AS features
+          FROM plans p
+          LEFT JOIN plan_features f ON f.plan_id = p.id
+         WHERE p.id = $1
+         GROUP BY p.id
+         LIMIT 1
+      `,
+      [id],
+    );
+
+    const plan = result.rows[0];
+    return plan ? this.normalizePlan(plan) : null;
+  }
 }
-\n  async findById(id: string): Promise<WorkspacePlan | null> {\n    const result = await this.pool.query<PlanRow>(\n      \n        SELECT p.id,\n               p.code,\n               p.name,\n               p.description,\n               p.price_amount::text AS price_amount,\n               p.currency,\n               p.billing_interval,\n               p.trial_days,\n               p.is_active,\n               p.metadata,\n               p.created_at,\n               p.updated_at,\n               COALESCE(\n                 jsonb_object_agg(f.feature_key, f.feature_value)\n                   FILTER (WHERE f.feature_key IS NOT NULL),\n                 '{}'::jsonb\n               ) AS features\n          FROM plans p\n          LEFT JOIN plan_features f ON f.plan_id = p.id\n         WHERE p.id = \n         GROUP BY p.id\n         LIMIT 1\n      ,\n      [id],\n    );\n\n    const plan = result.rows[0];\n    return plan ? this.normalizePlan(plan) : null;\n  }\n

@@ -21,4 +21,5 @@ export declare class PlansRepository {
     private normalizePlan;
     findActivePlans(): Promise<WorkspacePlan[]>;
     findByCode(code: string): Promise<WorkspacePlan | null>;
+    findById(id: string): Promise<WorkspacePlan | null>;
 }

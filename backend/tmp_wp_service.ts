@@ -2,18 +2,18 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   PlansRepository,
   WorkspacePlan,
-} from '../billing/repositories/plans.repository';
+} from './src/modules/billing/repositories/plans.repository';
 import {
   SubscriptionsRepository,
   WorkspaceSubscription,
-} from '../billing/repositories/subscriptions.repository';
+} from './src/modules/billing/repositories/subscriptions.repository';
 import {
   WorkspacesRepository,
   WorkspaceEntity,
-} from './repositories/workspaces.repository';
-import { WorkspaceMembersRepository } from './repositories/workspace-members.repository';
-import { WorkspaceSettingsRepository } from './repositories/workspace-settings.repository';
-import { ProfilesRepository } from '../auth/profiles.repository';
+} from './src/modules/workspace/repositories/workspaces.repository';
+import { WorkspaceMembersRepository } from './src/modules/workspace/repositories/workspace-members.repository';
+import { WorkspaceSettingsRepository } from './src/modules/workspace/repositories/workspace-settings.repository';
+import { ProfilesRepository } from './src/modules/auth/profiles.repository';
 
 export interface ProvisionWorkspaceParams {
   userId: string;
@@ -47,14 +47,11 @@ export class WorkspaceProvisioningService {
     const planCode = params.planCode ?? 'free';
     const plan = await this.plansRepository.findByCode(planCode);
     if (!plan || !plan.isActive) {
-      throw new NotFoundException(
-        `Plano ${planCode} nao encontrado ou inativo`,
-      );
+      throw new NotFoundException(`Plano ${planCode} nao encontrado ou inativo`);
     }
 
     const workspaceName = params.workspaceName?.trim() || 'Workspace FluxoLab';
-    const slug =
-      await this.workspacesRepository.generateUniqueSlug(workspaceName);
+    const slug = await this.workspacesRepository.generateUniqueSlug(workspaceName);
 
     const workspace = await this.workspacesRepository.createWorkspace({
       ownerId: params.userId,
@@ -71,8 +68,7 @@ export class WorkspaceProvisioningService {
 
     await this.settingsRepository.ensureDefaults(workspace.id);
 
-    const adminProfileId =
-      await this.profilesRepository.getRequiredProfileId('admin');
+    const adminProfileId = await this.profilesRepository.getRequiredProfileId('admin');
     await this.membersRepository.addOrActivateMember({
       workspaceId: workspace.id,
       userId: params.userId,
@@ -80,17 +76,13 @@ export class WorkspaceProvisioningService {
       invitedBy: params.assignedBy ?? null,
     });
 
-    const subscription =
-      await this.subscriptionsRepository.createInitialSubscription({
-        workspaceId: workspace.id,
-        planId: plan.id,
-        trialDays: plan.trialDays,
-        metadata: {
-          planCode: plan.code,
-        },
-      });
+    const subscription = await this.subscriptionsRepository.createInitialSubscription({
+      workspaceId: workspace.id,
+      planId: plan.id,
+      trialDays: plan.trialDays,
+      metadata: { planCode: plan.code },
+    });
 
     return { workspace, subscription, plan };
   }
 }
-
