@@ -16,11 +16,13 @@ const token_service_1 = require("../../shared/auth/token.service");
 const auth_controller_1 = require("./auth.controller");
 const auth_service_1 = require("./auth.service");
 const jwt_auth_guard_1 = require("./jwt-auth.guard");
+const require_workspace_guard_1 = require("./require-workspace.guard");
 const jwt_strategy_1 = require("./jwt.strategy");
 const users_repository_1 = require("./users.repository");
 const profiles_repository_1 = require("./profiles.repository");
 const user_settings_repository_1 = require("./user-settings.repository");
 const user_security_repository_1 = require("./user-security.repository");
+const workspace_module_1 = require("../workspace/workspace.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -37,6 +39,7 @@ exports.AuthModule = AuthModule = __decorate([
                     },
                 }),
             }),
+            (0, common_1.forwardRef)(() => workspace_module_1.WorkspaceModule),
         ],
         controllers: [auth_controller_1.AuthController],
         providers: [
@@ -47,12 +50,14 @@ exports.AuthModule = AuthModule = __decorate([
             token_service_1.TokenService,
             jwt_strategy_1.JwtStrategy,
             jwt_auth_guard_1.JwtAuthGuard,
+            require_workspace_guard_1.RequireWorkspaceGuard,
             user_settings_repository_1.UserSettingsRepository,
             user_security_repository_1.UserSecurityRepository,
         ],
         exports: [
             auth_service_1.AuthService,
             jwt_auth_guard_1.JwtAuthGuard,
+            require_workspace_guard_1.RequireWorkspaceGuard,
             users_repository_1.UsersRepository,
             profiles_repository_1.ProfilesRepository,
             user_settings_repository_1.UserSettingsRepository,

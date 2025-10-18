@@ -1,6 +1,7 @@
 import type { Response, Request } from 'express';
 import { GenerateWebhookDto } from './dto/generate-webhook.dto';
 import { WebhooksService } from './webhooks.service';
+import { WorkflowOrchestratorService } from '../workflows/workflow-orchestrator.service';
 interface VerifyQuery {
     'hub.mode'?: string;
     'hub.verify_token'?: string;
@@ -9,7 +10,8 @@ interface VerifyQuery {
 }
 export declare class WebhooksController {
     private readonly webhooksService;
-    constructor(webhooksService: WebhooksService);
+    private readonly orchestrator;
+    constructor(webhooksService: WebhooksService, orchestrator: WorkflowOrchestratorService);
     generateWebhook(payload: GenerateWebhookDto): Promise<{
         status: string;
         message: string;
@@ -19,16 +21,6 @@ export declare class WebhooksController {
     verifyWebhook(token: string, query: VerifyQuery, headers: Record<string, unknown>, res: Response): Promise<void>;
     receiveWebhook(token: string, body: unknown, headers: Record<string, unknown>, req: Request & {
         rawBody?: Buffer;
-    }): Promise<{
-        status: string;
-        message: string;
-        eventId: string;
-        processing: {
-            routeTo: string;
-            receivedType: string;
-            instruction: string;
-            payloadSize: number;
-        };
-    }>;
+    }, res: Response): Promise<void>;
 }
 export {};

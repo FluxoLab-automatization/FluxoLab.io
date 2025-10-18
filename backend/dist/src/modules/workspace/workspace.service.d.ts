@@ -53,7 +53,7 @@ export declare class WorkspaceService {
     getOverview(user: AuthenticatedUser): Promise<WorkspaceOverviewResponse>;
     listProjects(user: AuthenticatedUser, limit?: number): Promise<PresentedProject[]>;
     listActivities(user: AuthenticatedUser, limit?: number): Promise<PresentedActivity[]>;
-    listRecentWebhooks(limit?: number): Promise<PresentedWebhookEvent[]>;
+    listRecentWebhooks(user: AuthenticatedUser, limit?: number): Promise<PresentedWebhookEvent[]>;
     private normalizeProjects;
     private normalizeActivities;
     private normalizeWebhooks;

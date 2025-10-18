@@ -15,7 +15,7 @@ export declare class WorkspaceController {
         status: string;
         activities: import("./workspace.service").PresentedActivity[];
     }>;
-    listRecentWebhooks(limit: number): Promise<{
+    listRecentWebhooks(user: AuthenticatedUser, limit: number): Promise<{
         status: string;
         events: import("./workspace.service").PresentedWebhookEvent[];
     }>;

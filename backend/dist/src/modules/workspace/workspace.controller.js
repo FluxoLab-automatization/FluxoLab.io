@@ -16,6 +16,7 @@ exports.WorkspaceController = void 0;
 const common_1 = require("@nestjs/common");
 const workspace_service_1 = require("./workspace.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const require_workspace_guard_1 = require("../auth/require-workspace.guard");
 const current_user_decorator_1 = require("../auth/current-user.decorator");
 let WorkspaceController = class WorkspaceController {
     workspaceService;
@@ -43,8 +44,8 @@ let WorkspaceController = class WorkspaceController {
             activities,
         };
     }
-    async listRecentWebhooks(limit) {
-        const events = await this.workspaceService.listRecentWebhooks(limit);
+    async listRecentWebhooks(user, limit) {
+        const events = await this.workspaceService.listRecentWebhooks(user, limit);
         return {
             status: 'ok',
             events,
@@ -53,7 +54,7 @@ let WorkspaceController = class WorkspaceController {
 };
 exports.WorkspaceController = WorkspaceController;
 __decorate([
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, require_workspace_guard_1.RequireWorkspaceGuard),
     (0, common_1.Get)('overview'),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -61,7 +62,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], WorkspaceController.prototype, "getOverview", null);
 __decorate([
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, require_workspace_guard_1.RequireWorkspaceGuard),
     (0, common_1.Get)('projects'),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Query)('limit', new common_1.DefaultValuePipe(12), common_1.ParseIntPipe)),
@@ -70,7 +71,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], WorkspaceController.prototype, "listProjects", null);
 __decorate([
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, require_workspace_guard_1.RequireWorkspaceGuard),
     (0, common_1.Get)('activities'),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Query)('limit', new common_1.DefaultValuePipe(12), common_1.ParseIntPipe)),
@@ -79,11 +80,12 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], WorkspaceController.prototype, "listActivities", null);
 __decorate([
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, require_workspace_guard_1.RequireWorkspaceGuard),
     (0, common_1.Get)('webhooks/recent'),
-    __param(0, (0, common_1.Query)('limit', new common_1.DefaultValuePipe(10), common_1.ParseIntPipe)),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Query)('limit', new common_1.DefaultValuePipe(10), common_1.ParseIntPipe)),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [Object, Number]),
     __metadata("design:returntype", Promise)
 ], WorkspaceController.prototype, "listRecentWebhooks", null);
 exports.WorkspaceController = WorkspaceController = __decorate([

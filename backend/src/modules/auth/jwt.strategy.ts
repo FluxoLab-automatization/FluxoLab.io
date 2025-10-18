@@ -24,14 +24,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     try {
       const user = await this.usersRepository.findById(payload.sub);
-      if (!user) throw new UnauthorizedException('Token inválido ou expirado.');
+      if (!user) throw new UnauthorizedException('Token invalido ou expirado.');
 
-      // mapper agora não lança numa falta de workspaceId
-      return mapToAuthenticatedUser(user);
+      const authenticated = mapToAuthenticatedUser(user);
+      if (!authenticated.workspaceId) {
+        throw new UnprocessableEntityException(
+          'Workspace padrao nao definido para este usuario.',
+        );
+      }
+
+      return authenticated;
     } catch (e: any) {
-      // Evita 500 por Error genérica
       if (e instanceof UnauthorizedException || e instanceof UnprocessableEntityException) throw e;
-      throw new UnauthorizedException('Falha na validação do token/perfil.');
+      throw new UnauthorizedException('Falha na validacao do token/perfil.');
     }
   }
 }

@@ -63,6 +63,7 @@ export class WorkspaceService {
   async getOverview(
     user: AuthenticatedUser,
   ): Promise<WorkspaceOverviewResponse> {
+    const workspaceId = user.workspaceId as string;
     const [
       conversations,
       activities,
@@ -74,9 +75,9 @@ export class WorkspaceService {
       this.conversationsRepository.listRecentByOwner(user.id, 6),
       this.activitiesRepository.listRecentByUser(user.id, 8),
       this.conversationsRepository.countByOwner(user.id),
-      this.webhookRepository.countRegistrations(),
-      this.webhookRepository.countEvents(),
-      this.webhookRepository.listRecentEvents(5),
+      this.webhookRepository.countRegistrations(workspaceId),
+      this.webhookRepository.countEvents(workspaceId),
+      this.webhookRepository.listRecentEvents(workspaceId, 5),
     ]);
 
     return {
@@ -128,8 +129,15 @@ export class WorkspaceService {
     }));
   }
 
-  async listRecentWebhooks(limit = 10): Promise<PresentedWebhookEvent[]> {
-    const events = await this.webhookRepository.listRecentEvents(limit);
+  async listRecentWebhooks(
+    user: AuthenticatedUser,
+    limit = 10,
+  ): Promise<PresentedWebhookEvent[]> {
+    const workspaceId = user.workspaceId as string;
+    const events = await this.webhookRepository.listRecentEvents(
+      workspaceId,
+      limit,
+    );
     return events.map((event) => ({
       id: event.id,
       type: event.event_type,

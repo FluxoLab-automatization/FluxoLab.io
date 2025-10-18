@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
@@ -8,11 +8,13 @@ import { TokenService } from '../../shared/auth/token.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { RequireWorkspaceGuard } from './require-workspace.guard';
 import { JwtStrategy } from './jwt.strategy';
 import { UsersRepository } from './users.repository';
 import { ProfilesRepository } from './profiles.repository';
 import { UserSettingsRepository } from './user-settings.repository';
 import { UserSecurityRepository } from './user-security.repository';
+import { WorkspaceModule } from '../workspace/workspace.module';
 
 @Module({
   imports: [
@@ -26,6 +28,7 @@ import { UserSecurityRepository } from './user-security.repository';
         },
       }),
     }),
+    forwardRef(() => WorkspaceModule),
   ],
   controllers: [AuthController],
   providers: [
@@ -36,12 +39,14 @@ import { UserSecurityRepository } from './user-security.repository';
     TokenService,
     JwtStrategy,
     JwtAuthGuard,
+    RequireWorkspaceGuard,
     UserSettingsRepository,
     UserSecurityRepository,
   ],
   exports: [
     AuthService,
     JwtAuthGuard,
+    RequireWorkspaceGuard,
     UsersRepository,
     ProfilesRepository,
     UserSettingsRepository,
@@ -49,3 +54,4 @@ import { UserSecurityRepository } from './user-security.repository';
   ],
 })
 export class AuthModule {}
+

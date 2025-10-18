@@ -20,21 +20,23 @@ let WorkspaceWebhookRepository = class WorkspaceWebhookRepository {
     get pool() {
         return this.database.getPool();
     }
-    async countRegistrations() {
+    async countRegistrations(workspaceId) {
         const result = await this.pool.query(`
         SELECT COUNT(*)::int AS total
         FROM webhook_registrations
-      `);
+        WHERE workspace_id = $1
+      `, [workspaceId]);
         return result.rows[0]?.total ?? 0;
     }
-    async countEvents() {
+    async countEvents(workspaceId) {
         const result = await this.pool.query(`
         SELECT COUNT(*)::int AS total
         FROM webhook_events
-      `);
+        WHERE workspace_id = $1
+      `, [workspaceId]);
         return result.rows[0]?.total ?? 0;
     }
-    async listRecentEvents(limit) {
+    async listRecentEvents(workspaceId, limit) {
         const result = await this.pool.query(`
         SELECT id,
                registration_id,
@@ -43,9 +45,10 @@ let WorkspaceWebhookRepository = class WorkspaceWebhookRepository {
                signature_valid,
                received_at
         FROM webhook_events
+        WHERE workspace_id = $1
         ORDER BY received_at DESC
-        LIMIT $1
-      `, [limit]);
+        LIMIT $2
+      `, [workspaceId, limit]);
         return result.rows;
     }
 };

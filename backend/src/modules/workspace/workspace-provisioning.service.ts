@@ -16,6 +16,7 @@ import { WorkspaceSettingsRepository } from './repositories/workspace-settings.r
 import { WorkspaceEnvironmentsRepository } from './repositories/workspace-environments.repository';
 import { WorkspaceIntegrationsRepository } from './repositories/workspace-integrations.repository';
 import { ProfilesRepository } from '../auth/profiles.repository';
+import { UsersRepository } from '../auth/users.repository';
 
 export interface ProvisionWorkspaceParams {
   userId: string;
@@ -43,6 +44,7 @@ export class WorkspaceProvisioningService {
     private readonly environmentsRepository: WorkspaceEnvironmentsRepository,
     private readonly integrationsRepository: WorkspaceIntegrationsRepository,
     private readonly profilesRepository: ProfilesRepository,
+    private readonly usersRepository: UsersRepository,
   ) {}
 
   async provisionInitialWorkspace(
@@ -95,6 +97,8 @@ export class WorkspaceProvisioningService {
           planCode: plan.code,
         },
       });
+
+    await this.usersRepository.setDefaultWorkspace(params.userId, workspace.id);
 
     return { workspace, subscription, plan };
   }

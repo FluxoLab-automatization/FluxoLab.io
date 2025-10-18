@@ -31,9 +31,9 @@ let WorkspaceService = class WorkspaceService {
             this.conversationsRepository.listRecentByOwner(user.id, 6),
             this.activitiesRepository.listRecentByUser(user.id, 8),
             this.conversationsRepository.countByOwner(user.id),
-            this.webhookRepository.countRegistrations(),
-            this.webhookRepository.countEvents(),
-            this.webhookRepository.listRecentEvents(5),
+            this.webhookRepository.countRegistrations(user.workspaceId),
+            this.webhookRepository.countEvents(user.workspaceId),
+            this.webhookRepository.listRecentEvents(user.workspaceId, 5),
         ]);
         return {
             metrics: {
@@ -69,8 +69,8 @@ let WorkspaceService = class WorkspaceService {
             createdAt: activity.created_at,
         }));
     }
-    async listRecentWebhooks(limit = 10) {
-        const events = await this.webhookRepository.listRecentEvents(limit);
+    async listRecentWebhooks(user, limit = 10) {
+        const events = await this.webhookRepository.listRecentEvents(user.workspaceId, limit);
         return events.map((event) => ({
             id: event.id,
             type: event.event_type,

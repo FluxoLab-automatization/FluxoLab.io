@@ -13,8 +13,12 @@ export declare class UsersRepository {
     private readonly database;
     constructor(database: DatabaseService);
     private get pool();
-    findByEmail(email: string): Promise<UserRecord | null>;
-    findById(id: string): Promise<UserRecord | null>;
+    findByEmail(email: string): Promise<(UserRecord & {
+        default_workspace_id: string | null;
+    }) | null>;
+    findById(id: string): Promise<UserRecord & {
+        default_workspace_id: string | null;
+    } | null>;
     createUser({ email, passwordHash, displayName, avatarColor, }: {
         email: string;
         passwordHash: string;
@@ -22,4 +26,5 @@ export declare class UsersRepository {
         avatarColor: string | null;
     }): Promise<UserRecord>;
     touchLastLogin(id: string): Promise<void>;
+    setDefaultWorkspace(userId: string, workspaceId: string): Promise<void>;
 }

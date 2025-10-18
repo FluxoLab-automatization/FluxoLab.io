@@ -12,7 +12,7 @@ Monorepo com os serviços principais da plataforma FluxoLab:
 
 ## Backend (Express legado)
 
-API em Node.js para geracao e recebimento de webhooks com persistencia em Postgres.
+API em Node.js para geracao e recebimento de webhooks com persistencia em Postgres. As rotas de webhook foram migradas para o backend NestJS (`/api/*`) e permanecem aqui apenas para indicar o novo caminho (HTTP 410 + `target`).
 
 ## Requisitos
 
@@ -45,13 +45,20 @@ npm run migrate
 npm start
 ```
 
-## Endpoints
+## Endpoints legados (Express)
 
 - `POST /auth/register`: cria um usuario (requer `SIGNUP_ACCESS_TOKEN` definido, se configurado).
 - `POST /auth/login`: autentica usuario e retorna JWT + dados basicos para a UI.
-- `POST /generate-webhook`: gera token e URL para um usuario. O token completo so e retornado uma vez.
-- `GET /webhooks/:token`: valida o webhook com a Meta/WhatsApp (challenge). Registro precisa existir e o `VERIFY_TOKEN` precisa casar.
-- `POST /webhooks/:token`: recebe eventos, valida assinatura `X-Hub-Signature-256` se `APP_SECRET` estiver configurado e armazena o payload no Postgres.
+- `POST /generate-webhook`: **depreciado**. Retorna HTTP `410` informando para usar `POST /api/generate-webhook`.
+- `GET /webhooks/:token`: **depreciado**. Retorna HTTP `410` com `target` apontando para `GET /api/webhooks/:token`.
+- `POST /webhooks/:token`: **depreciado**. Retorna HTTP `410` com `target` apontando para `POST /api/webhooks/:token`.
+
+## Endpoints (NestJS)
+
+- `POST /api/generate-webhook`: gera token e URL para um usuario via `WebhooksModule`.
+- `GET /api/webhooks/:token`: valida webhook (challenge Meta/WhatsApp) com registro ativo.
+- `POST /api/webhooks/:token`: recebe eventos, valida assinatura `X-Hub-Signature-256` e registra o payload.
+- `GET /api/workspace/webhooks/recent`: lista eventos recentes (guard JWT).
 
 ## Banco de dados
 
@@ -73,6 +80,7 @@ O runner `npm run migrate` aplica os arquivos SQL em `db/migrations`.
 
 ## Proximos passos sugeridos
 
+- Migrar os demais endpoints Express (auth, overview) para o NestJS ou desligar `server.js` de vez.
 - Adicionar fila de mensagens para entregar eventos a outros servicos (por exemplo BullMQ).
 - Criar painel para consultar registros e eventos armazenados.
 - Implementar reprocessamento de eventos com base na tabela `webhook_events`.
@@ -94,8 +102,8 @@ npm run start:dev
 - Repositório de usuários reutilizando as tabelas existentes.
 
 ### Próximos passos
-- Migrar serviços de workspace e webhooks do Express para módulos dedicados.
-- Adicionar testes unitários/e2e (`auth.service.spec`, etc.).
+- Consolidar a substituição do Express removendo o fallback remanescente.
+- Adicionar testes unitários/e2e (`auth.service.spec`, `webhooks.e2e-spec`, etc.).
 - Expor health-check e documentação (Swagger).
 
 ## Front-end Vue 3

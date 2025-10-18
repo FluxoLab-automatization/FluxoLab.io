@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 export interface JwtPayload {
   sub: string;
   email: string;
+  workspaceId?: string | null;
 }
 
 @Injectable()

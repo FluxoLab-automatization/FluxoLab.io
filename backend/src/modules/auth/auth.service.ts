@@ -1,8 +1,10 @@
 import {
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   UnauthorizedException,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../../config/env.validation';
@@ -15,6 +17,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UserSettingsRepository } from './user-settings.repository';
 import { UserSecurityRepository } from './user-security.repository';
+import { WorkspaceProvisioningService } from '../workspace/workspace-provisioning.service';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +28,8 @@ export class AuthService {
     private readonly config: ConfigService<AppConfig, true>,
     private readonly userSettingsRepository: UserSettingsRepository,
     private readonly userSecurityRepository: UserSecurityRepository,
+    @Inject(forwardRef(() => WorkspaceProvisioningService))
+    private readonly workspaceProvisioning: WorkspaceProvisioningService,
   ) {}
 
   async login(payload: LoginDto) {
@@ -49,9 +54,19 @@ export class AuthService {
 
     await this.usersRepository.touchLastLogin(user.id);
 
+    if (!user.default_workspace_id) {
+      const { workspace } = await this.workspaceProvisioning.provisionInitialWorkspace({
+        userId: user.id,
+        assignedBy: user.id,
+      });
+      await this.usersRepository.setDefaultWorkspace(user.id, workspace.id);
+      (user as any).default_workspace_id = workspace.id;
+    }
+
     const token = this.tokenService.generateToken({
       sub: user.id,
       email: user.email,
+      workspaceId: (user as any).default_workspace_id ?? null,
     });
 
     return {
@@ -106,6 +121,12 @@ export class AuthService {
       this.userSecurityRepository.ensureSecurityRow(newUser.id),
     ]);
 
+    const { workspace } = await this.workspaceProvisioning.provisionInitialWorkspace({
+      userId: newUser.id,
+      assignedBy: newUser.id,
+    });
+    await this.usersRepository.setDefaultWorkspace(newUser.id, workspace.id);
+
     return {
       status: 'created',
       user: {
@@ -113,6 +134,7 @@ export class AuthService {
         email: newUser.email,
         displayName: newUser.display_name,
         avatarColor: newUser.avatar_color ?? '#6366F1',
+        workspaceId: workspace.id,
       },
     };
   }
@@ -124,3 +146,6 @@ export class AuthService {
     };
   }
 }
+
+
+

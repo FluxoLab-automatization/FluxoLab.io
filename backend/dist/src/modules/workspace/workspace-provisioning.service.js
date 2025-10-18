@@ -19,6 +19,7 @@ const workspace_settings_repository_1 = require("./repositories/workspace-settin
 const workspace_environments_repository_1 = require("./repositories/workspace-environments.repository");
 const workspace_integrations_repository_1 = require("./repositories/workspace-integrations.repository");
 const profiles_repository_1 = require("../auth/profiles.repository");
+const users_repository_1 = require("../auth/users.repository");
 let WorkspaceProvisioningService = class WorkspaceProvisioningService {
     plansRepository;
     subscriptionsRepository;
@@ -28,7 +29,8 @@ let WorkspaceProvisioningService = class WorkspaceProvisioningService {
     environmentsRepository;
     integrationsRepository;
     profilesRepository;
-    constructor(plansRepository, subscriptionsRepository, workspacesRepository, membersRepository, settingsRepository, environmentsRepository, integrationsRepository, profilesRepository) {
+    usersRepository;
+    constructor(plansRepository, subscriptionsRepository, workspacesRepository, membersRepository, settingsRepository, environmentsRepository, integrationsRepository, profilesRepository, usersRepository) {
         this.plansRepository = plansRepository;
         this.subscriptionsRepository = subscriptionsRepository;
         this.workspacesRepository = workspacesRepository;
@@ -37,6 +39,7 @@ let WorkspaceProvisioningService = class WorkspaceProvisioningService {
         this.environmentsRepository = environmentsRepository;
         this.integrationsRepository = integrationsRepository;
         this.profilesRepository = profilesRepository;
+        this.usersRepository = usersRepository;
     }
     async provisionInitialWorkspace(params) {
         const planCode = params.planCode ?? 'free';
@@ -76,6 +79,7 @@ let WorkspaceProvisioningService = class WorkspaceProvisioningService {
                 planCode: plan.code,
             },
         });
+        await this.usersRepository.setDefaultWorkspace(params.userId, workspace.id);
         return { workspace, subscription, plan };
     }
 };
@@ -89,6 +93,7 @@ exports.WorkspaceProvisioningService = WorkspaceProvisioningService = __decorate
         workspace_settings_repository_1.WorkspaceSettingsRepository,
         workspace_environments_repository_1.WorkspaceEnvironmentsRepository,
         workspace_integrations_repository_1.WorkspaceIntegrationsRepository,
-        profiles_repository_1.ProfilesRepository])
+        profiles_repository_1.ProfilesRepository,
+        users_repository_1.UsersRepository])
 ], WorkspaceProvisioningService);
 //# sourceMappingURL=workspace-provisioning.service.js.map

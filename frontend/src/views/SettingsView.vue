@@ -7,6 +7,7 @@ import { useSessionStore } from '../stores/session.store';
 import { fetchSettingsSummary, fetchUsageAlerts } from '../services/settings.service';
 import UsageChart from '../components/settings/UsageChart.vue';
 import PlanUpgrade from '../components/settings/PlanUpgrade.vue';
+import WorkflowCredentialsPanel from '../components/workflows/WorkflowCredentialsPanel.vue';
 import type {
   SettingsSummary,
   FeatureGateInfo,
@@ -572,6 +573,9 @@ async function handleCreateApiKey() {
             </div>
           </article>
         </div>
+        <div class="workflow-credentials-wrapper">
+          <WorkflowCredentialsPanel />
+        </div>
       </section>
 
       <section class="settings-section" id="api">
@@ -925,6 +929,10 @@ async function handleCreateApiKey() {
 
 .settings-grid--integrations {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.workflow-credentials-wrapper {
+  margin-top: 1.5rem;
 }
 
 .settings-grid--features {

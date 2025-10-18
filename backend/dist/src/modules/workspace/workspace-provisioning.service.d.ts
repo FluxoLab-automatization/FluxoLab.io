@@ -6,6 +6,7 @@ import { WorkspaceSettingsRepository } from './repositories/workspace-settings.r
 import { WorkspaceEnvironmentsRepository } from './repositories/workspace-environments.repository';
 import { WorkspaceIntegrationsRepository } from './repositories/workspace-integrations.repository';
 import { ProfilesRepository } from '../auth/profiles.repository';
+import { UsersRepository } from '../auth/users.repository';
 export interface ProvisionWorkspaceParams {
     userId: string;
     workspaceName?: string;
@@ -28,6 +29,7 @@ export declare class WorkspaceProvisioningService {
     private readonly environmentsRepository;
     private readonly integrationsRepository;
     private readonly profilesRepository;
-    constructor(plansRepository: PlansRepository, subscriptionsRepository: SubscriptionsRepository, workspacesRepository: WorkspacesRepository, membersRepository: WorkspaceMembersRepository, settingsRepository: WorkspaceSettingsRepository, environmentsRepository: WorkspaceEnvironmentsRepository, integrationsRepository: WorkspaceIntegrationsRepository, profilesRepository: ProfilesRepository);
+    private readonly usersRepository;
+    constructor(plansRepository: PlansRepository, subscriptionsRepository: SubscriptionsRepository, workspacesRepository: WorkspacesRepository, membersRepository: WorkspaceMembersRepository, settingsRepository: WorkspaceSettingsRepository, environmentsRepository: WorkspaceEnvironmentsRepository, integrationsRepository: WorkspaceIntegrationsRepository, profilesRepository: ProfilesRepository, usersRepository: UsersRepository);
     provisionInitialWorkspace(params: ProvisionWorkspaceParams): Promise<ProvisionWorkspaceResult>;
 }

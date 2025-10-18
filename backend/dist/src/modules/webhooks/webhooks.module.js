@@ -12,11 +12,13 @@ const webhooks_controller_1 = require("./webhooks.controller");
 const webhooks_service_1 = require("./webhooks.service");
 const webhook_registrations_repository_1 = require("./repositories/webhook-registrations.repository");
 const webhook_events_repository_1 = require("./repositories/webhook-events.repository");
+const workflows_module_1 = require("../workflows/workflows.module");
 let WebhooksModule = class WebhooksModule {
 };
 exports.WebhooksModule = WebhooksModule;
 exports.WebhooksModule = WebhooksModule = __decorate([
     (0, common_1.Module)({
+        imports: [workflows_module_1.WorkflowsModule],
         controllers: [webhooks_controller_1.WebhooksController],
         providers: [
             webhooks_service_1.WebhooksService,

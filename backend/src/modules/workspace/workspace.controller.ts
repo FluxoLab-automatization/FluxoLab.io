@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { WorkspaceService } from './workspace.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireWorkspaceGuard } from '../auth/require-workspace.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
 
@@ -15,7 +16,7 @@ import type { AuthenticatedUser } from '../auth/auth.types';
 export class WorkspaceController {
   constructor(private readonly workspaceService: WorkspaceService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RequireWorkspaceGuard)
   @Get('overview')
   async getOverview(@CurrentUser() user: AuthenticatedUser) {
     const overview = await this.workspaceService.getOverview(user);
@@ -25,7 +26,7 @@ export class WorkspaceController {
     };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RequireWorkspaceGuard)
   @Get('projects')
   async listProjects(
     @CurrentUser() user: AuthenticatedUser,
@@ -38,7 +39,7 @@ export class WorkspaceController {
     };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RequireWorkspaceGuard)
   @Get('activities')
   async listActivities(
     @CurrentUser() user: AuthenticatedUser,
@@ -51,12 +52,13 @@ export class WorkspaceController {
     };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RequireWorkspaceGuard)
   @Get('webhooks/recent')
   async listRecentWebhooks(
+    @CurrentUser() user: AuthenticatedUser,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
-    const events = await this.workspaceService.listRecentWebhooks(limit);
+    const events = await this.workspaceService.listRecentWebhooks(user, limit);
     return {
       status: 'ok',
       events,

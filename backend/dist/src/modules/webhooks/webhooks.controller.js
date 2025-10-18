@@ -16,10 +16,13 @@ exports.WebhooksController = void 0;
 const common_1 = require("@nestjs/common");
 const generate_webhook_dto_1 = require("./dto/generate-webhook.dto");
 const webhooks_service_1 = require("./webhooks.service");
+const workflow_orchestrator_service_1 = require("../workflows/workflow-orchestrator.service");
 let WebhooksController = class WebhooksController {
     webhooksService;
-    constructor(webhooksService) {
+    orchestrator;
+    constructor(webhooksService, orchestrator) {
         this.webhooksService = webhooksService;
+        this.orchestrator = orchestrator;
     }
     generateWebhook(payload) {
         return this.webhooksService.generateWebhook(payload);
@@ -28,8 +31,41 @@ let WebhooksController = class WebhooksController {
         const challenge = await this.webhooksService.verifyWebhook(token, query, headers);
         res.status(200).send(challenge);
     }
-    receiveWebhook(token, body, headers, req) {
-        return this.webhooksService.receiveWebhook(token, body, headers, req.rawBody);
+    async receiveWebhook(token, body, headers, req, res) {
+        let responded = false;
+        const respond = (status, payload) => {
+            responded = true;
+            if (res.headersSent) {
+                return;
+            }
+            if (typeof payload === 'string') {
+                res.status(status).send(payload);
+            }
+            else {
+                res.status(status).json(payload);
+            }
+        };
+        try {
+            const result = await this.orchestrator.triggerViaWebhook({
+                token,
+                method: req.method,
+                headers,
+                query: req.query,
+                body,
+                rawBody: req.rawBody ?? null,
+                idempotencyKey: req.header('x-idempotency-key') ?? null,
+                respond,
+            });
+            if (!responded && !res.headersSent) {
+                respond(202, { status: 'accepted', executionId: result.executionId });
+            }
+        }
+        catch (error) {
+            const response = await this.webhooksService.receiveWebhook(token, body, headers, req.rawBody);
+            if (!res.headersSent) {
+                res.status(200).json(response);
+            }
+        }
     }
 };
 exports.WebhooksController = WebhooksController;
@@ -56,12 +92,14 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Headers)()),
     __param(3, (0, common_1.Req)()),
+    __param(4, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object, Object, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, Object, Object, Object, Object]),
+    __metadata("design:returntype", Promise)
 ], WebhooksController.prototype, "receiveWebhook", null);
 exports.WebhooksController = WebhooksController = __decorate([
     (0, common_1.Controller)('api'),
-    __metadata("design:paramtypes", [webhooks_service_1.WebhooksService])
+    __metadata("design:paramtypes", [webhooks_service_1.WebhooksService,
+        workflow_orchestrator_service_1.WorkflowOrchestratorService])
 ], WebhooksController);
 //# sourceMappingURL=webhooks.controller.js.map

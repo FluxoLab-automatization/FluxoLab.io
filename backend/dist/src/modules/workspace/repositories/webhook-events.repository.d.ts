@@ -11,7 +11,7 @@ export declare class WorkspaceWebhookRepository {
     private readonly database;
     constructor(database: DatabaseService);
     private get pool();
-    countRegistrations(): Promise<number>;
-    countEvents(): Promise<number>;
-    listRecentEvents(limit: number): Promise<WebhookEventRecord[]>;
+    countRegistrations(workspaceId: string): Promise<number>;
+    countEvents(workspaceId: string): Promise<number>;
+    listRecentEvents(workspaceId: string, limit: number): Promise<WebhookEventRecord[]>;
 }

@@ -22,32 +22,90 @@ let UsersRepository = class UsersRepository {
     }
     async findByEmail(email) {
         const result = await this.pool.query(`
-        SELECT id,
-               email,
-               display_name,
-               password_hash,
-               avatar_color,
-               created_at,
-               updated_at,
-               last_login_at
-        FROM users
-        WHERE email = $1
+        SELECT
+          u.id,
+          u.email,
+          u.display_name,
+          u.avatar_color,
+          u.password_hash,
+          u.created_at,
+          u.updated_at,
+          u.last_login_at,
+          COALESCE(
+            u.default_workspace_id,
+            (
+              SELECT wm.workspace_id
+              FROM workspace_members wm
+              WHERE wm.user_id = u.id
+                AND wm.status = 'active'
+              ORDER BY wm.created_at ASC
+              LIMIT 1
+            ),
+            (
+              SELECT w.id
+              FROM workspaces w
+              WHERE w.owner_id = u.id
+              ORDER BY w.created_at ASC
+              LIMIT 1
+            )
+          ) AS default_workspace_id
+        FROM users u
+        WHERE u.email = $1
         LIMIT 1
       `, [email.toLowerCase()]);
         return result.rows[0] ?? null;
     }
     async findById(id) {
         const result = await this.pool.query(`
-        SELECT id,
-               email,
-               display_name,
-               avatar_color,
-               password_hash,
-               created_at,
-               updated_at,
-               last_login_at
-        FROM users
-        WHERE id = $1
+        WITH candidate AS (
+          SELECT
+            wm.workspace_id,
+            ROW_NUMBER() OVER (ORDER BY wm.created_at ASC) AS rank
+          FROM workspace_members wm
+          WHERE wm.user_id = $1
+            AND wm.status = 'active'
+          UNION ALL
+          SELECT
+            w.id AS workspace_id,
+            999 AS rank
+          FROM workspaces w
+          WHERE w.owner_id = $1
+        ),
+        default_ws AS (
+          SELECT workspace_id
+          FROM candidate
+          ORDER BY rank ASC
+          LIMIT 1
+        )
+        SELECT
+          u.id,
+          u.email,
+          u.display_name,
+          u.avatar_color,
+          u.password_hash,
+          u.created_at,
+          u.updated_at,
+          u.last_login_at,
+          COALESCE(
+            u.default_workspace_id,
+            (
+              SELECT wm.workspace_id
+              FROM workspace_members wm
+              WHERE wm.user_id = u.id
+                AND wm.status = 'active'
+              ORDER BY wm.created_at ASC
+              LIMIT 1
+            ),
+            (
+              SELECT w.id
+              FROM workspaces w
+              WHERE w.owner_id = u.id
+              ORDER BY w.created_at ASC
+              LIMIT 1
+            )
+          ) AS default_workspace_id
+        FROM users u
+        WHERE u.id = $1
         LIMIT 1
       `, [id]);
         return result.rows[0] ?? null;
@@ -74,6 +132,14 @@ let UsersRepository = class UsersRepository {
             updated_at = NOW()
         WHERE id = $1
       `, [id]);
+    }
+    async setDefaultWorkspace(userId, workspaceId) {
+        await this.pool.query(`
+        UPDATE users
+           SET default_workspace_id = $2,
+               updated_at = NOW()
+         WHERE id = $1
+      `, [userId, workspaceId]);
     }
 };
 exports.UsersRepository = UsersRepository;

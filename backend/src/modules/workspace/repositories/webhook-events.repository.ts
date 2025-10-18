@@ -18,27 +18,31 @@ export class WorkspaceWebhookRepository {
     return this.database.getPool();
   }
 
-  async countRegistrations(): Promise<number> {
+  async countRegistrations(workspaceId: string): Promise<number> {
     const result = await this.pool.query<{ total: number }>(
       `
         SELECT COUNT(*)::int AS total
         FROM webhook_registrations
+        WHERE workspace_id = $1
       `,
+      [workspaceId],
     );
     return result.rows[0]?.total ?? 0;
   }
 
-  async countEvents(): Promise<number> {
+  async countEvents(workspaceId: string): Promise<number> {
     const result = await this.pool.query<{ total: number }>(
       `
         SELECT COUNT(*)::int AS total
         FROM webhook_events
+        WHERE workspace_id = $1
       `,
+      [workspaceId],
     );
     return result.rows[0]?.total ?? 0;
   }
 
-  async listRecentEvents(limit: number): Promise<WebhookEventRecord[]> {
+  async listRecentEvents(workspaceId: string, limit: number): Promise<WebhookEventRecord[]> {
     const result = await this.pool.query<WebhookEventRecord>(
       `
         SELECT id,
@@ -48,10 +52,11 @@ export class WorkspaceWebhookRepository {
                signature_valid,
                received_at
         FROM webhook_events
+        WHERE workspace_id = $1
         ORDER BY received_at DESC
-        LIMIT $1
+        LIMIT $2
       `,
-      [limit],
+      [workspaceId, limit],
     );
 
     return result.rows;

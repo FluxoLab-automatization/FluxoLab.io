@@ -8,6 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,6 +21,7 @@ const auth_mapper_1 = require("./auth.mapper");
 const users_repository_1 = require("./users.repository");
 const user_settings_repository_1 = require("./user-settings.repository");
 const user_security_repository_1 = require("./user-security.repository");
+const workspace_provisioning_service_1 = require("../workspace/workspace-provisioning.service");
 let AuthService = class AuthService {
     usersRepository;
     passwordService;
@@ -25,13 +29,15 @@ let AuthService = class AuthService {
     config;
     userSettingsRepository;
     userSecurityRepository;
-    constructor(usersRepository, passwordService, tokenService, config, userSettingsRepository, userSecurityRepository) {
+    workspaceProvisioning;
+    constructor(usersRepository, passwordService, tokenService, config, userSettingsRepository, userSecurityRepository, workspaceProvisioning) {
         this.usersRepository = usersRepository;
         this.passwordService = passwordService;
         this.tokenService = tokenService;
         this.config = config;
         this.userSettingsRepository = userSettingsRepository;
         this.userSecurityRepository = userSecurityRepository;
+        this.workspaceProvisioning = workspaceProvisioning;
     }
     async login(payload) {
         const user = await this.usersRepository.findByEmail(payload.email);
@@ -49,9 +55,18 @@ let AuthService = class AuthService {
             });
         }
         await this.usersRepository.touchLastLogin(user.id);
+        if (!user.default_workspace_id) {
+            const { workspace } = await this.workspaceProvisioning.provisionInitialWorkspace({
+                userId: user.id,
+                assignedBy: user.id,
+            });
+            await this.usersRepository.setDefaultWorkspace(user.id, workspace.id);
+            user.default_workspace_id = workspace.id;
+        }
         const token = this.tokenService.generateToken({
             sub: user.id,
             email: user.email,
+            workspaceId: user.default_workspace_id ?? null,
         });
         return {
             status: 'ok',
@@ -94,13 +109,18 @@ let AuthService = class AuthService {
             }),
             this.userSecurityRepository.ensureSecurityRow(newUser.id),
         ]);
+        const { workspace } = await this.workspaceProvisioning.provisionInitialWorkspace({
+            userId: newUser.id,
+            assignedBy: newUser.id,
+        });
+        await this.usersRepository.setDefaultWorkspace(newUser.id, workspace.id);
         return {
             status: 'created',
             user: {
                 id: newUser.id,
                 email: newUser.email,
                 displayName: newUser.display_name,
-                avatarColor: newUser.avatar_color ?? '#6366F1',
+                avatarColor: newUser.avatar_color ?? '#6366F1', n, workspaceId: workspace.id, n
             },
         };
     }
@@ -114,11 +134,13 @@ let AuthService = class AuthService {
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
+    __param(6, (0, common_1.Inject)((0, common_1.forwardRef)(() => workspace_provisioning_service_1.WorkspaceProvisioningService))),
     __metadata("design:paramtypes", [users_repository_1.UsersRepository,
         password_service_1.PasswordService,
         token_service_1.TokenService,
         config_1.ConfigService,
         user_settings_repository_1.UserSettingsRepository,
-        user_security_repository_1.UserSecurityRepository])
+        user_security_repository_1.UserSecurityRepository,
+        workspace_provisioning_service_1.WorkspaceProvisioningService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

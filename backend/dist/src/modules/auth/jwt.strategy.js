@@ -32,13 +32,17 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         try {
             const user = await this.usersRepository.findById(payload.sub);
             if (!user)
-                throw new common_1.UnauthorizedException('Token inválido ou expirado.');
-            return (0, auth_mapper_1.mapToAuthenticatedUser)(user);
+                throw new common_1.UnauthorizedException('Token invalido ou expirado.');
+            const authenticated = (0, auth_mapper_1.mapToAuthenticatedUser)(user);
+            if (!authenticated.workspaceId) {
+                throw new common_1.UnprocessableEntityException('Workspace padrao nao definido para este usuario.');
+            }
+            return authenticated;
         }
         catch (e) {
             if (e instanceof common_1.UnauthorizedException || e instanceof common_1.UnprocessableEntityException)
                 throw e;
-            throw new common_1.UnauthorizedException('Falha na validação do token/perfil.');
+            throw new common_1.UnauthorizedException('Falha na validacao do token/perfil.');
         }
     }
 };

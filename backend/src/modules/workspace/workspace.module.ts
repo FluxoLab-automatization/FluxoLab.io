@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { WorkspaceController } from './workspace.controller';
 import { SettingsController } from './settings.controller';
 import { WorkspaceService } from './workspace.service';
@@ -20,7 +20,7 @@ import { UsageAnalyticsService } from './services/usage-analytics.service';
 import { PlanManagementService } from './services/plan-management.service';
 
 @Module({
-  imports: [AuthModule, BillingModule],
+  imports: [forwardRef(() => AuthModule), BillingModule],
   controllers: [WorkspaceController, SettingsController],
   providers: [
     WorkspaceService,

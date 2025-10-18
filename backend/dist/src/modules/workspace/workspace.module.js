@@ -32,7 +32,7 @@ let WorkspaceModule = class WorkspaceModule {
 exports.WorkspaceModule = WorkspaceModule;
 exports.WorkspaceModule = WorkspaceModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, billing_module_1.BillingModule],
+        imports: [(0, common_1.forwardRef)(() => auth_module_1.AuthModule), billing_module_1.BillingModule],
         controllers: [workspace_controller_1.WorkspaceController, settings_controller_1.SettingsController],
         providers: [
             workspace_service_1.WorkspaceService,
