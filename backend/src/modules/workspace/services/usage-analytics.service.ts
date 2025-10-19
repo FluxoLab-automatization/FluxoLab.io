@@ -5,6 +5,10 @@ import {
   UsageHistoryResponse,
   UsageDataPoint,
 } from '../dto/usage-history.dto';
+import {
+  WorkspaceUsageAlertsRepository,
+  WorkspaceUsageAlertRecord,
+} from '../repositories/workspace-usage-alerts.repository';
 
 type DateRange = { start: Date; end: Date };
 
@@ -12,7 +16,10 @@ type DateRange = { start: Date; end: Date };
 export class UsageAnalyticsService {
   private readonly logger = new Logger(UsageAnalyticsService.name);
 
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly usageAlerts: WorkspaceUsageAlertsRepository,
+  ) {}
 
   async getUsageHistory(
     workspaceId: string,
@@ -215,13 +222,45 @@ export class UsageAnalyticsService {
     return 0;
   }
 
-  async getUsageAlerts(_workspaceId: string): Promise<any[]> {
-    // TODO: implementar regras de alertas
-    return [];
+  async getUsageAlerts(workspaceId: string): Promise<any[]> {
+    const records = await this.usageAlerts.listByWorkspace(workspaceId);
+    return records.map((record) => this.mapAlert(record));
   }
 
-  async createUsageAlert(_workspaceId: string, _alertConfig: any): Promise<any> {
-    // TODO: persistir alerta e agendar checagens/notifications
-    return {};
+  async createUsageAlert(workspaceId: string, alertConfig: any): Promise<any> {
+    const record = await this.usageAlerts.createAlert({
+      workspaceId,
+      metric: alertConfig.metric ?? 'webhooks',
+      threshold: Number(alertConfig.threshold ?? 0),
+      condition: alertConfig.condition ?? 'greater_than',
+      window: alertConfig.window ?? '24h',
+      channel: alertConfig.channel ?? 'email',
+      createdBy: alertConfig.createdBy ?? null,
+      metadata: alertConfig.metadata ?? {},
+    });
+
+    let finalRecord: WorkspaceUsageAlertRecord = record;
+    if (alertConfig.enabled === false) {
+      await this.usageAlerts.setEnabled(record.id, false);
+      finalRecord = { ...record, enabled: false };
+    }
+
+    return this.mapAlert(finalRecord);
+  }
+
+  private mapAlert(record: WorkspaceUsageAlertRecord) {
+    return {
+      id: record.id,
+      metric: record.metric,
+      threshold: Number(record.threshold),
+      condition: record.condition,
+      window: record.window,
+      channel: record.channel,
+      enabled: record.enabled,
+      metadata: record.metadata ?? {},
+      lastTriggeredAt: record.last_triggered_at,
+      createdAt: record.created_at,
+      updatedAt: record.updated_at,
+    };
   }
 }

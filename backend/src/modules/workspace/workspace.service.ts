@@ -17,6 +17,7 @@ export interface PresentedProject {
 
 export interface PresentedActivity {
   id: string;
+  workspaceId: string;
   entityType: string;
   entityId: string | null;
   action: string;
@@ -73,7 +74,7 @@ export class WorkspaceService {
       recentEvents,
     ] = await Promise.all([
       this.conversationsRepository.listRecentByOwner(user.id, 6),
-      this.activitiesRepository.listRecentByUser(user.id, 8),
+      this.activitiesRepository.listRecentByUser(workspaceId, user.id, 8),
       this.conversationsRepository.countByOwner(user.id),
       this.webhookRepository.countRegistrations(workspaceId),
       this.webhookRepository.countEvents(workspaceId),
@@ -115,16 +116,19 @@ export class WorkspaceService {
     user: AuthenticatedUser,
     limit = 12,
   ): Promise<PresentedActivity[]> {
+    const workspaceId = user.workspaceId as string;
     const activities = await this.activitiesRepository.listRecentByUser(
+      workspaceId,
       user.id,
       limit,
     );
     return activities.map((activity) => ({
       id: activity.id,
+      workspaceId: workspaceId,
       entityType: activity.entity_type,
       entityId: activity.entity_id,
       action: activity.action,
-      payload: activity.payload ?? {},
+      payload: activity.metadata ?? {},
       createdAt: activity.created_at,
     }));
   }
@@ -140,7 +144,7 @@ export class WorkspaceService {
     );
     return events.map((event) => ({
       id: event.id,
-      type: event.event_type,
+      type: event.http_method ? event.http_method.toUpperCase() : 'WEBHOOK_EVENT',
       status: event.status,
       signatureValid: event.signature_valid,
       receivedAt: event.received_at,
@@ -195,10 +199,11 @@ export class WorkspaceService {
     if (records.length > 0) {
       return records.map((activity) => ({
         id: activity.id,
+        workspaceId: activity.workspace_id,
         entityType: activity.entity_type,
         entityId: activity.entity_id,
         action: activity.action,
-        payload: activity.payload ?? {},
+        payload: activity.metadata ?? {},
         createdAt: activity.created_at,
       }));
     }
@@ -206,6 +211,7 @@ export class WorkspaceService {
     return [
       {
         id: 'activity-getting-started',
+        workspaceId: 'system',
         entityType: 'guide',
         entityId: null,
         action: 'Leia o guia de primeiros passos e monte seu primeiro fluxo.',
@@ -217,6 +223,7 @@ export class WorkspaceService {
       },
       {
         id: 'activity-test-webhook',
+        workspaceId: 'system',
         entityType: 'tip',
         entityId: null,
         action:
@@ -238,7 +245,7 @@ export class WorkspaceService {
     if (records.length > 0) {
       return records.map((event) => ({
         id: event.id,
-        type: event.event_type,
+        type: event.http_method ? event.http_method.toUpperCase() : 'WEBHOOK_EVENT',
         status: event.status,
         signatureValid: event.signature_valid,
         receivedAt: event.received_at,

@@ -25,16 +25,18 @@ let WorkflowCredentialsController = class WorkflowCredentialsController {
         this.credentialsService = credentialsService;
     }
     async list(user) {
-        const credentials = await this.credentialsService.listCredentials(user.workspaceId);
+        const workspaceId = user.workspaceId;
+        const credentials = await this.credentialsService.listCredentials(workspaceId);
         return {
             status: 'ok',
             credentials,
         };
     }
     async create(user, payload) {
+        const workspaceId = user.workspaceId;
         const secret = payload.secret ?? {};
         const credential = await this.credentialsService.createCredential({
-            workspaceId: user.workspaceId,
+            workspaceId,
             name: payload.name,
             type: payload.type,
             secret,

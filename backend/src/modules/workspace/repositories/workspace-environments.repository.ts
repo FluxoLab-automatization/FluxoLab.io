@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../shared/database/database.service';
 
-interface EnvironmentRecord {
+export interface EnvironmentRecord {
   id: string;
   workspace_id: string;
   name: string;
@@ -67,5 +67,35 @@ export class WorkspaceEnvironmentsRepository {
     );
 
     return result.rows;
+  }
+
+  async updateStatus(params: {
+    workspaceId: string;
+    environmentId: string;
+    status: EnvironmentRecord['status'];
+  }): Promise<EnvironmentRecord | null> {
+    const result = await this.pool.query<EnvironmentRecord>(
+      `
+        UPDATE workspace_environments
+           SET status = $3,
+               updated_at = NOW()
+         WHERE workspace_id = $1
+           AND id = $2
+        RETURNING id,
+                  workspace_id,
+                  name,
+                  slug,
+                  environment_type,
+                  region,
+                  status,
+                  metadata,
+                  last_synced_at,
+                  created_at,
+                  updated_at
+      `,
+      [params.workspaceId, params.environmentId, params.status],
+    );
+
+    return result.rows[0] ?? null;
   }
 }

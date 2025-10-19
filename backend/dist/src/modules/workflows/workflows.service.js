@@ -159,7 +159,10 @@ let WorkflowsService = class WorkflowsService {
             id: row.id,
             workflowId: row.workflow_id,
             version: row.version,
-            definition: row.definition,
+            definition: {
+                nodes: (row.definition?.nodes ?? []),
+                connections: (row.definition?.connections ?? []),
+            },
             checksum: row.checksum,
             createdAt: row.created_at,
         };

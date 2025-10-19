@@ -1,5 +1,5 @@
 import { DatabaseService } from '../../../shared/database/database.service';
-interface EnvironmentRecord {
+export interface EnvironmentRecord {
     id: string;
     workspace_id: string;
     name: string;
@@ -18,5 +18,9 @@ export declare class WorkspaceEnvironmentsRepository {
     private get pool();
     ensureDefaultEnvironments(workspaceId: string): Promise<void>;
     listByWorkspace(workspaceId: string): Promise<EnvironmentRecord[]>;
+    updateStatus(params: {
+        workspaceId: string;
+        environmentId: string;
+        status: EnvironmentRecord['status'];
+    }): Promise<EnvironmentRecord | null>;
 }
-export {};

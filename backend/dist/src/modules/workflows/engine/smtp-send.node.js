@@ -9,10 +9,24 @@ const utils_1 = require("./utils");
 exports.SmtpSendNodeHandler = {
     type: 'smtp.send',
     async execute(node, input, ctx) {
-        const params = (node.params ?? {});
-        if (!params.credentialId) {
+        const rawParams = (node.params ?? {});
+        if (!rawParams.credentialId) {
             throw new Error('SMTP node requires credentialId');
         }
+        if (!rawParams.to) {
+            throw new Error('SMTP node requires recipient (to)');
+        }
+        if (!rawParams.subject) {
+            throw new Error('SMTP node requires subject');
+        }
+        const params = {
+            credentialId: rawParams.credentialId,
+            to: String(rawParams.to),
+            subject: String(rawParams.subject),
+            from: rawParams.from,
+            text: rawParams.text,
+            html: rawParams.html,
+        };
         const credential = (await ctx.getCredential(params.credentialId)) ?? {};
         const transporter = nodemailer_1.default.createTransport({
             host: credential.host,

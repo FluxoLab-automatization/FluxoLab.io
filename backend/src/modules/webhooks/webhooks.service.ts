@@ -8,12 +8,19 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
-import * as crypto from 'crypto';
+import {
+  createHmac,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual,
+} from 'crypto';
 import type { AppConfig } from '../../config/env.validation';
 import { SecurityService } from '../../shared/security/security.service';
 import { GenerateWebhookDto } from './dto/generate-webhook.dto';
-import { WebhookRegistrationsRepository } from './repositories/webhook-registrations.repository';
-import { WebhookEventsRepository } from './repositories/webhook-events.repository';
+import {
+  WebhookRegistration,
+  WorkflowWebhookService,
+} from '../workflows/workflow-webhook.service';
 
 interface VerifyQuery {
   'hub.mode'?: string;
@@ -25,6 +32,7 @@ interface VerifyQuery {
 interface SignatureCheckResult {
   valid: boolean;
   reason: string;
+  signature?: string | null;
 }
 
 interface MetaEventPayload {
@@ -64,8 +72,7 @@ export class WebhooksService {
   private readonly appSecret: string;
 
   constructor(
-    private readonly registrationsRepository: WebhookRegistrationsRepository,
-    private readonly eventsRepository: WebhookEventsRepository,
+    private readonly webhookService: WorkflowWebhookService,
     private readonly securityService: SecurityService,
     private readonly config: ConfigService<AppConfig, true>,
     private readonly logger: PinoLogger,
@@ -84,20 +91,30 @@ export class WebhooksService {
   }
 
   async generateWebhook(dto: GenerateWebhookDto) {
-    const token = crypto.randomBytes(24).toString('hex');
-    const tokenHash = this.securityService.hashToken(token);
+    const token = randomBytes(24).toString('hex');
+    const relativePathCandidate = this.normalizeRelativePath(dto.path);
+    const relativePath =
+      relativePathCandidate.length > 0 ? relativePathCandidate : token;
+    const routePath = this.buildRoutePath(relativePath);
 
-    const registration = await this.registrationsRepository.createRegistration({
-      userId: dto.userId,
-      tokenHash,
+    const registration = await this.webhookService.registerWebhook({
+      workspaceId: dto.workspaceId,
+      workflowId: dto.workflowId,
+      token,
+      path: routePath,
+      method: dto.method ?? 'POST',
+      respondMode: dto.respondMode ?? 'via_node',
+      createdBy: dto.userId ?? null,
+      description: dto.description ?? null,
     });
 
-    const webhookUrl = `${this.baseUrl}${this.receivingBasePath}/${token}`;
+    const webhookUrl = `${this.baseUrl}${routePath}`;
 
     this.logger.info(
       {
         registrationId: registration.id,
-        userId: dto.userId,
+        workspaceId: dto.workspaceId,
+        workflowId: dto.workflowId,
         token: this.securityService.maskToken(token),
       },
       'Webhook token generated',
@@ -108,6 +125,7 @@ export class WebhooksService {
       message: 'Webhook URL generated successfully.',
       token,
       webhookUrl,
+      registrationId: registration.id,
     };
   }
 
@@ -117,6 +135,8 @@ export class WebhooksService {
     headers: Record<string, unknown>,
   ): Promise<string> {
     const registration = await this.requireRegistration(token);
+    const snapshotHeaders = this.headerSnapshot(headers);
+    const normalizedQuery = this.normalizeQuery(query);
 
     const mode =
       typeof query['hub.mode'] === 'string' ? query['hub.mode'] : undefined;
@@ -137,13 +157,17 @@ export class WebhooksService {
     }
 
     if (mode === 'subscribe' && verifyTokenQuery === this.verifyToken) {
-      await this.registrationsRepository.markVerified(registration.id);
-      await this.eventsRepository.recordEvent({
-        registrationId: registration.id,
-        eventType: 'meta_verification',
-        payload: { query },
-        headers: this.headerSnapshot(headers),
-        signatureValid: true,
+      await this.webhookService.recordEvent({
+        workspaceId: registration.workspaceId,
+        webhookId: registration.id,
+        correlationId: randomUUID(),
+        method: 'GET',
+        headers: snapshotHeaders,
+        query: normalizedQuery,
+        body: { mode, query: normalizedQuery },
+        rawBody: null,
+        signature: null,
+        idempotencyKey: null,
         status: 'processed',
       });
 
@@ -158,14 +182,18 @@ export class WebhooksService {
       return challenge ?? 'verified';
     }
 
-    await this.eventsRepository.recordEvent({
-      registrationId: registration.id,
-      eventType: 'meta_verification',
-      payload: { query },
-      headers: this.headerSnapshot(headers),
-      signatureValid: false,
-      status: 'rejected',
-      errorMessage: 'verify_token_mismatch',
+    await this.webhookService.recordEvent({
+      workspaceId: registration.workspaceId,
+      webhookId: registration.id,
+      correlationId: randomUUID(),
+      method: 'GET',
+      headers: snapshotHeaders,
+      query: normalizedQuery,
+      body: { mode, query: normalizedQuery },
+      rawBody: null,
+      signature: null,
+      idempotencyKey: null,
+      status: 'failed',
     });
 
     this.logger.warn(
@@ -184,22 +212,31 @@ export class WebhooksService {
 
   async receiveWebhook(
     token: string,
+    method: string,
+    query: Record<string, unknown>,
     body: unknown,
     headers: Record<string, unknown>,
     rawBody: Buffer | undefined,
   ) {
     const registration = await this.requireRegistration(token);
-
+    const snapshotHeaders = this.headerSnapshot(headers);
     const signatureCheck = this.verifyMetaSignature(headers, rawBody);
+    const correlationId = randomUUID();
+    const normalizedQuery = this.normalizeQuery(query);
+
     if (!signatureCheck.valid) {
-      await this.eventsRepository.recordEvent({
-        registrationId: registration.id,
-        eventType: 'webhook_event',
-        payload: body,
-        headers: this.headerSnapshot(headers),
-        signatureValid: false,
-        status: 'rejected',
-        errorMessage: signatureCheck.reason,
+      await this.webhookService.recordEvent({
+        workspaceId: registration.workspaceId,
+        webhookId: registration.id,
+        correlationId,
+        method,
+        headers: snapshotHeaders,
+        query: normalizedQuery,
+        body,
+        rawBody: rawBody ?? null,
+        signature: signatureCheck.signature ?? null,
+        idempotencyKey: null,
+        status: 'failed',
       });
 
       this.logger.warn(
@@ -222,14 +259,18 @@ export class WebhooksService {
         headers['content-type']) ||
       '';
     if (!contentType.includes('application/json')) {
-      await this.eventsRepository.recordEvent({
-        registrationId: registration.id,
-        eventType: 'webhook_event',
-        payload: null,
-        headers: this.headerSnapshot(headers),
-        signatureValid: true,
-        status: 'rejected',
-        errorMessage: 'unsupported_content_type',
+      await this.webhookService.recordEvent({
+        workspaceId: registration.workspaceId,
+        webhookId: registration.id,
+        correlationId,
+        method,
+        headers: snapshotHeaders,
+        query: normalizedQuery,
+        body: null,
+        rawBody: null,
+        signature: signatureCheck.signature ?? null,
+        idempotencyKey: null,
+        status: 'failed',
       });
 
       throw new BadRequestException({
@@ -238,38 +279,35 @@ export class WebhooksService {
       });
     }
 
-    await this.registrationsRepository.updateLastUsedAt(registration.id);
+    const eventId = await this.webhookService.recordEvent({
+      workspaceId: registration.workspaceId,
+      webhookId: registration.id,
+      correlationId,
+      method,
+      headers: snapshotHeaders,
+      query: normalizedQuery,
+      body,
+      rawBody: rawBody ?? null,
+      signature: signatureCheck.signature ?? null,
+      idempotencyKey: null,
+      status: 'received',
+    });
 
     try {
-      const processing = this.processEvent(registration.user_id, body);
-      const eventRecord = await this.eventsRepository.recordEvent({
-        registrationId: registration.id,
-        eventType: processing.receivedType,
-        payload: body,
-        headers: this.headerSnapshot(headers),
-        signatureValid: true,
-        status: 'processed',
-      });
+      const processing = this.buildProcessingSummary(registration, body);
+      await this.webhookService.updateEventStatus(eventId, 'processed');
 
       return {
         status: 'success',
         message: 'Event received and stored successfully.',
-        eventId: eventRecord.id,
+        eventId,
         processing,
       };
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'processing_failed';
 
-      await this.eventsRepository.recordEvent({
-        registrationId: registration.id,
-        eventType: this.extractEventType(body),
-        payload: body,
-        headers: this.headerSnapshot(headers),
-        signatureValid: true,
-        status: 'error',
-        errorMessage,
-      });
+      await this.webhookService.updateEventStatus(eventId, 'failed');
 
       this.logger.error(
         {
@@ -290,22 +328,23 @@ export class WebhooksService {
   }
 
   private async requireRegistration(token: string) {
-    const tokenHash = this.securityService.hashToken(token);
-    const registration =
-      await this.registrationsRepository.findActiveByTokenHash(tokenHash);
+    try {
+      return await this.webhookService.getRegistrationByToken(token);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        this.logger.warn(
+          { token: this.securityService.maskToken(token) },
+          'Webhook token not found or inactive',
+        );
+      }
 
-    if (!registration) {
-      this.logger.warn(
-        { token: this.securityService.maskToken(token) },
-        'Webhook token not found or inactive',
-      );
-      throw new NotFoundException({
-        status: 'error',
-        message: 'Webhook token not found or inactive.',
-      });
+      throw error instanceof NotFoundException
+        ? error
+        : new NotFoundException({
+            status: 'error',
+            message: 'Webhook token not found or inactive.',
+          });
     }
-
-    return registration;
   }
 
   private verifyMetaSignature(
@@ -313,36 +352,45 @@ export class WebhooksService {
     rawBody: Buffer | undefined,
   ): SignatureCheckResult {
     if (!this.appSecret) {
-      return { valid: true, reason: 'app_secret_not_configured' };
+      return { valid: true, reason: 'app_secret_not_configured', signature: null };
     }
 
-    const signatureHeader =
-      (headers['x-hub-signature-256'] as string | undefined) ??
-      (headers['X-Hub-Signature-256'] as string | undefined);
+    const signatureHeader = this.extractSignatureHeader(headers);
 
     if (!signatureHeader) {
-      return { valid: false, reason: 'missing_signature' };
+      return { valid: false, reason: 'missing_signature', signature: null };
     }
 
     const [scheme, providedHash] = signatureHeader.split('=');
     if (scheme !== 'sha256' || !providedHash) {
-      return { valid: false, reason: 'invalid_signature_format' };
+      return {
+        valid: false,
+        reason: 'invalid_signature_format',
+        signature: signatureHeader,
+      };
     }
 
-    const expected = crypto
-      .createHmac('sha256', this.appSecret)
+    const expected = createHmac('sha256', this.appSecret)
       .update(rawBody ?? Buffer.alloc(0))
       .digest('hex');
 
     if (providedHash.length !== expected.length) {
-      return { valid: false, reason: 'length_mismatch' };
+      return {
+        valid: false,
+        reason: 'length_mismatch',
+        signature: signatureHeader,
+      };
     }
 
     try {
       const providedBuffer = Buffer.from(providedHash, 'hex');
       const expectedBuffer = Buffer.from(expected, 'hex');
-      const valid = crypto.timingSafeEqual(providedBuffer, expectedBuffer);
-      return { valid, reason: valid ? 'matched' : 'mismatch' };
+      const valid = timingSafeEqual(providedBuffer, expectedBuffer);
+      return {
+        valid,
+        reason: valid ? 'matched' : 'mismatch',
+        signature: signatureHeader,
+      };
     } catch (error) {
       this.logger.warn(
         {
@@ -353,16 +401,26 @@ export class WebhooksService {
         },
         'Failed to compare webhook signature',
       );
-      return { valid: false, reason: 'comparison_failed' };
+      return {
+        valid: false,
+        reason: 'comparison_failed',
+        signature: signatureHeader,
+      };
     }
   }
 
-  private processEvent(userId: string, eventData: unknown) {
+  private buildProcessingSummary(
+    registration: WebhookRegistration,
+    eventData: unknown,
+  ) {
     const receivedType = this.extractEventType(eventData);
     return {
-      routeTo: userId,
+      routeTo: registration.workflowId,
+      workspaceId: registration.workspaceId,
       receivedType,
-      instruction: 'Forward payload to the user specific automation workflow.',
+      respondMode: registration.respondMode,
+      instruction:
+        'Payload stored and ready for workflow execution via orchestrator.',
       payloadSize: Buffer.byteLength(JSON.stringify(eventData ?? {}), 'utf8'),
     };
   }
@@ -390,6 +448,46 @@ export class WebhooksService {
     }
 
     return 'unknown';
+  }
+
+  private normalizeQuery(query: VerifyQuery | Record<string, unknown>) {
+    const normalized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(query ?? {})) {
+      if (Array.isArray(value)) {
+        normalized[key] = value;
+      } else if (value !== undefined) {
+        normalized[key] = value;
+      }
+    }
+    return normalized;
+  }
+
+  private extractSignatureHeader(headers: Record<string, unknown>): string | null {
+    const lower = Object.entries(headers ?? {}).reduce<Record<string, string>>(
+      (acc, [key, value]) => {
+        if (typeof value === 'string') {
+          acc[key.toLowerCase()] = value;
+        }
+        return acc;
+      },
+      {},
+    );
+    return lower['x-hub-signature-256'] ?? null;
+  }
+
+  private normalizeRelativePath(path?: string): string {
+    if (!path) {
+      return '';
+    }
+    return path.trim().replace(/^\/+/, '').replace(/\/+$/, '');
+  }
+
+  private buildRoutePath(relative: string): string {
+    const combined = `${this.receivingBasePath}/${relative}`.replace(
+      /\/{2,}/g,
+      '/',
+    );
+    return combined.endsWith('/') && combined !== '/' ? combined.slice(0, -1) : combined;
   }
 
   private headerSnapshot(

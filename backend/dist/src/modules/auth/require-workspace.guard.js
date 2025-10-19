@@ -15,7 +15,7 @@ let RequireWorkspaceGuard = class RequireWorkspaceGuard {
         if (!user || !user.workspaceId) {
             throw new common_1.UnprocessableEntityException({
                 status: 'error',
-                message: 'Workspace padrão não definido. Crie ou selecione um workspace e tente novamente.',
+                message: 'Workspace padrao nao definido. Crie ou selecione um workspace e tente novamente.',
             });
         }
         request.workspaceId = user.workspaceId;

@@ -19,16 +19,22 @@ const current_user_decorator_1 = require("../auth/current-user.decorator");
 const workspace_settings_service_1 = require("./workspace-settings.service");
 const usage_analytics_service_1 = require("./services/usage-analytics.service");
 const plan_management_service_1 = require("./services/plan-management.service");
+const workspace_api_keys_service_1 = require("./services/workspace-api-keys.service");
+const workspace_integrations_service_1 = require("./services/workspace-integrations.service");
 const usage_history_dto_1 = require("./dto/usage-history.dto");
 const plan_management_dto_1 = require("./dto/plan-management.dto");
 let SettingsController = class SettingsController {
     workspaceSettingsService;
     usageAnalyticsService;
     planManagementService;
-    constructor(workspaceSettingsService, usageAnalyticsService, planManagementService) {
+    apiKeysService;
+    integrationsService;
+    constructor(workspaceSettingsService, usageAnalyticsService, planManagementService, apiKeysService, integrationsService) {
         this.workspaceSettingsService = workspaceSettingsService;
         this.usageAnalyticsService = usageAnalyticsService;
         this.planManagementService = planManagementService;
+        this.apiKeysService = apiKeysService;
+        this.integrationsService = integrationsService;
     }
     requireWorkspaceId(user) {
         const id = user.workspaceId ?? null;
@@ -99,6 +105,76 @@ let SettingsController = class SettingsController {
             history,
         };
     }
+    async getIntegrationsStatus(user) {
+        const workspaceId = this.requireWorkspaceId(user);
+        const integrations = await this.integrationsService.getStatus(workspaceId);
+        return {
+            status: 'ok',
+            integrations,
+        };
+    }
+    async setEnvironmentStatus(user, environmentId, payload) {
+        const workspaceId = this.requireWorkspaceId(user);
+        const updated = await this.integrationsService.updateEnvironmentStatus({
+            workspaceId,
+            environmentId,
+            status: payload.status,
+        });
+        if (!updated) {
+            throw new common_1.NotFoundException('Ambiente nao encontrado para este workspace.');
+        }
+        return {
+            status: 'ok',
+            environment: updated,
+        };
+    }
+    async configureSso(user, body) {
+        const workspaceId = this.requireWorkspaceId(user);
+        await this.integrationsService.configureSso({
+            workspaceId,
+            provider: body.provider,
+            clientId: body.clientId,
+            clientSecret: body.clientSecret,
+            enabled: body.enabled,
+            recordedBy: user.id,
+        });
+        return {
+            status: 'ok',
+            message: 'SSO configuration updated successfully',
+        };
+    }
+    async configureLdap(user, body) {
+        const workspaceId = this.requireWorkspaceId(user);
+        await this.integrationsService.configureLdap({
+            workspaceId,
+            host: body.host,
+            baseDn: body.baseDn,
+            port: body.port,
+            bindDn: body.bindDn,
+            bindPassword: body.bindPassword,
+            enabled: body.enabled,
+            recordedBy: user.id,
+        });
+        return {
+            status: 'ok',
+            message: 'LDAP configuration updated successfully',
+        };
+    }
+    async configureLogDestination(user, body) {
+        const workspaceId = this.requireWorkspaceId(user);
+        await this.integrationsService.configureLogDestination({
+            workspaceId,
+            destination: body.destination,
+            endpoint: body.endpoint,
+            apiKey: body.apiKey,
+            enabled: body.enabled,
+            recordedBy: user.id,
+        });
+        return {
+            status: 'ok',
+            message: 'Log destination updated successfully',
+        };
+    }
     async updateProfile(user, profileData) {
         return {
             status: 'ok',
@@ -112,27 +188,51 @@ let SettingsController = class SettingsController {
         };
     }
     async createApiKey(user, keyData) {
+        const workspaceId = this.requireWorkspaceId(user);
+        const { token, key } = await this.apiKeysService.createKey({
+            workspaceId,
+            label: keyData.label ?? 'Chave API',
+            scopes: Array.isArray(keyData.scopes) ? keyData.scopes : [],
+            createdBy: user.id,
+            expiresAt: keyData.expiresAt ? new Date(keyData.expiresAt) : null,
+            metadata: keyData.metadata ?? {},
+        });
         return {
             status: 'ok',
-            message: 'API key created successfully',
+            token,
+            key,
         };
     }
     async revokeApiKey(user, keyId) {
+        const workspaceId = this.requireWorkspaceId(user);
+        await this.apiKeysService.revokeKey({
+            workspaceId,
+            apiKeyId: keyId,
+            actorId: user.id,
+        });
         return {
             status: 'ok',
             message: 'API key revoked successfully',
         };
     }
     async getApiKeyUsage(user, keyId) {
+        const workspaceId = this.requireWorkspaceId(user);
+        const usage = await this.apiKeysService.getKeyUsage(workspaceId, keyId);
         return {
             status: 'ok',
-            usage: [],
+            usage,
         };
     }
     async rotateApiKey(user, keyId) {
+        const workspaceId = this.requireWorkspaceId(user);
+        const { token } = await this.apiKeysService.rotateKey({
+            workspaceId,
+            apiKeyId: keyId,
+            actorId: user.id,
+        });
         return {
             status: 'ok',
-            message: 'API key rotated successfully',
+            token,
         };
     }
 };
@@ -206,6 +306,51 @@ __decorate([
 ], SettingsController.prototype, "getBillingHistory", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('integrations/status'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], SettingsController.prototype, "getIntegrationsStatus", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Put)('environments/:environmentId/status'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('environmentId')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, Object]),
+    __metadata("design:returntype", Promise)
+], SettingsController.prototype, "setEnvironmentStatus", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('sso/configure'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], SettingsController.prototype, "configureSso", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('ldap/configure'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], SettingsController.prototype, "configureLdap", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('logs/configure'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], SettingsController.prototype, "configureLogDestination", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Put)('personal/profile'),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
@@ -262,6 +407,8 @@ exports.SettingsController = SettingsController = __decorate([
     (0, common_1.Controller)('api/settings'),
     __metadata("design:paramtypes", [workspace_settings_service_1.WorkspaceSettingsService,
         usage_analytics_service_1.UsageAnalyticsService,
-        plan_management_service_1.PlanManagementService])
+        plan_management_service_1.PlanManagementService,
+        workspace_api_keys_service_1.WorkspaceApiKeysService,
+        workspace_integrations_service_1.WorkspaceIntegrationsService])
 ], SettingsController);
 //# sourceMappingURL=settings.controller.js.map

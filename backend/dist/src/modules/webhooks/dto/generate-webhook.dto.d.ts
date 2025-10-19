@@ -1,3 +1,9 @@
 export declare class GenerateWebhookDto {
-    userId: string;
+    workspaceId: string;
+    workflowId: string;
+    userId?: string;
+    path?: string;
+    method?: 'GET' | 'POST';
+    respondMode?: 'immediate' | 'on_last_node' | 'via_node';
+    description?: string;
 }

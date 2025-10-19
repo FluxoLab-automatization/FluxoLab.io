@@ -27,13 +27,14 @@ let WorkspaceService = class WorkspaceService {
         this.config = config;
     }
     async getOverview(user) {
+        const workspaceId = user.workspaceId;
         const [conversations, activities, totalProjects, totalWebhooks, totalEvents, recentEvents,] = await Promise.all([
             this.conversationsRepository.listRecentByOwner(user.id, 6),
-            this.activitiesRepository.listRecentByUser(user.id, 8),
+            this.activitiesRepository.listRecentByUser(workspaceId, user.id, 8),
             this.conversationsRepository.countByOwner(user.id),
-            this.webhookRepository.countRegistrations(user.workspaceId),
-            this.webhookRepository.countEvents(user.workspaceId),
-            this.webhookRepository.listRecentEvents(user.workspaceId, 5),
+            this.webhookRepository.countRegistrations(workspaceId),
+            this.webhookRepository.countEvents(workspaceId),
+            this.webhookRepository.listRecentEvents(workspaceId, 5),
         ]);
         return {
             metrics: {
@@ -59,21 +60,24 @@ let WorkspaceService = class WorkspaceService {
         }));
     }
     async listActivities(user, limit = 12) {
-        const activities = await this.activitiesRepository.listRecentByUser(user.id, limit);
+        const workspaceId = user.workspaceId;
+        const activities = await this.activitiesRepository.listRecentByUser(workspaceId, user.id, limit);
         return activities.map((activity) => ({
             id: activity.id,
+            workspaceId: workspaceId,
             entityType: activity.entity_type,
             entityId: activity.entity_id,
             action: activity.action,
-            payload: activity.payload ?? {},
+            payload: activity.metadata ?? {},
             createdAt: activity.created_at,
         }));
     }
     async listRecentWebhooks(user, limit = 10) {
-        const events = await this.webhookRepository.listRecentEvents(user.workspaceId, limit);
+        const workspaceId = user.workspaceId;
+        const events = await this.webhookRepository.listRecentEvents(workspaceId, limit);
         return events.map((event) => ({
             id: event.id,
-            type: event.event_type,
+            type: event.http_method ? event.http_method.toUpperCase() : 'WEBHOOK_EVENT',
             status: event.status,
             signatureValid: event.signature_valid,
             receivedAt: event.received_at,
@@ -119,16 +123,18 @@ let WorkspaceService = class WorkspaceService {
         if (records.length > 0) {
             return records.map((activity) => ({
                 id: activity.id,
+                workspaceId: activity.workspace_id,
                 entityType: activity.entity_type,
                 entityId: activity.entity_id,
                 action: activity.action,
-                payload: activity.payload ?? {},
+                payload: activity.metadata ?? {},
                 createdAt: activity.created_at,
             }));
         }
         return [
             {
                 id: 'activity-getting-started',
+                workspaceId: 'system',
                 entityType: 'guide',
                 entityId: null,
                 action: 'Leia o guia de primeiros passos e monte seu primeiro fluxo.',
@@ -140,6 +146,7 @@ let WorkspaceService = class WorkspaceService {
             },
             {
                 id: 'activity-test-webhook',
+                workspaceId: 'system',
                 entityType: 'tip',
                 entityId: null,
                 action: 'Teste o webhook padrao com um POST e acompanhe o payload em tempo real.',
@@ -155,7 +162,7 @@ let WorkspaceService = class WorkspaceService {
         if (records.length > 0) {
             return records.map((event) => ({
                 id: event.id,
-                type: event.event_type,
+                type: event.http_method ? event.http_method.toUpperCase() : 'WEBHOOK_EVENT',
                 status: event.status,
                 signatureValid: event.signature_valid,
                 receivedAt: event.received_at,

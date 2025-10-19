@@ -20,6 +20,11 @@ export class WorkflowRunnerService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     const queue = this.queueService.getQueue();
+    const connection = this.queueService.getConnection();
+    if (!queue || !connection) {
+      this.logger.log('Workflow runner disabled (queue not available)');
+      return;
+    }
     this.worker = new Worker<DeliverPayload>(
       queue.name,
       async (job) => {
@@ -56,7 +61,7 @@ export class WorkflowRunnerService implements OnModuleInit, OnModuleDestroy {
         }
       },
       {
-        connection: this.queueService.getConnection(),
+        connection,
       },
     );
 

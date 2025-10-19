@@ -1,8 +1,5 @@
 import { DatabaseService } from '../../shared/database/database.service';
-export interface WorkflowDefinition {
-    nodes: Array<Record<string, unknown>>;
-    connections: Array<Record<string, unknown>>;
-}
+import { WorkflowDefinition } from './engine/types';
 export interface WorkflowEntity {
     id: string;
     workspaceId: string;

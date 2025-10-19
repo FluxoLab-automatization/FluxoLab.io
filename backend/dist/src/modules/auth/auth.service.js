@@ -120,7 +120,8 @@ let AuthService = class AuthService {
                 id: newUser.id,
                 email: newUser.email,
                 displayName: newUser.display_name,
-                avatarColor: newUser.avatar_color ?? '#6366F1', n, workspaceId: workspace.id, n
+                avatarColor: newUser.avatar_color ?? '#6366F1',
+                workspaceId: workspace.id,
             },
         };
     }

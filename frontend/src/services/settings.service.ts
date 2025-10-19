@@ -1,5 +1,10 @@
 import { apiFetch } from './api';
-import type { SettingsSummaryResponse, SettingsSummary } from '../types/api';
+import type {
+  SettingsSummaryResponse,
+  SettingsSummary,
+  UsageAlertsResponse,
+  WorkspaceApiKey,
+} from '../types/api';
 
 export async function fetchSettingsSummary(
   token: string,
@@ -16,12 +21,15 @@ export async function fetchSettingsSummary(
 }
 
 // Usage Analytics
-export async function fetchUsageHistory(params: {
+export async function fetchUsageHistory(
+  token: string,
+  params: {
   period?: string;
   startDate?: string;
   endDate?: string;
   metric?: 'webhooks' | 'users' | 'workflows' | 'all';
-}) {
+},
+) {
   const searchParams = new URLSearchParams();
   if (params.period) searchParams.set('period', params.period);
   if (params.startDate) searchParams.set('startDate', params.startDate);
@@ -30,93 +38,120 @@ export async function fetchUsageHistory(params: {
 
   return apiFetch(`/settings/usage/history?${searchParams.toString()}`, {
     method: 'GET',
+    token,
   });
 }
 
-export async function fetchUsageAlerts() {
-  return apiFetch('/settings/usage/alerts', {
+export async function fetchUsageAlerts(token: string) {
+  return apiFetch<UsageAlertsResponse>('/settings/usage/alerts', {
     method: 'GET',
+    token,
   });
 }
 
-export async function createUsageAlert(alertConfig: {
+export async function createUsageAlert(
+  token: string,
+  alertConfig: {
   metric: string;
   threshold: number;
   condition: 'greater_than' | 'less_than' | 'equals';
   enabled: boolean;
-}) {
+},
+) {
   return apiFetch('/settings/usage/alerts', {
     method: 'POST',
-    body: alertConfig,
+    token,
+    body: JSON.stringify(alertConfig),
   });
 }
 
 // Plan Management
-export async function fetchAvailablePlans() {
+export async function fetchAvailablePlans(token: string) {
   return apiFetch('/settings/plans/available', {
     method: 'GET',
+    token,
   });
 }
 
-export async function upgradePlan(upgradeData: {
+export async function upgradePlan(
+  token: string,
+  upgradeData: {
   planCode: string;
   billingInterval?: 'month' | 'year';
   immediate?: boolean;
-}) {
+},
+) {
   return apiFetch('/settings/plans/upgrade', {
     method: 'POST',
-    body: upgradeData,
+    token,
+    body: JSON.stringify(upgradeData),
   });
 }
 
-export async function cancelSubscription(cancelData: {
+export async function cancelSubscription(
+  token: string,
+  cancelData: {
   reason?: string;
   immediate?: boolean;
-}) {
+},
+) {
   return apiFetch('/settings/billing/cancel', {
     method: 'POST',
-    body: cancelData,
+    token,
+    body: JSON.stringify(cancelData),
   });
 }
 
-export async function fetchBillingHistory() {
+export async function fetchBillingHistory(token: string) {
   return apiFetch('/settings/billing/history', {
     method: 'GET',
+    token,
   });
 }
 
 // Personal Settings
-export async function updateProfile(profileData: {
+export async function updateProfile(
+  token: string,
+  profileData: {
   displayName?: string;
   email?: string;
   avatar?: string;
   timezone?: string;
   language?: string;
-}) {
+},
+) {
   return apiFetch('/settings/personal/profile', {
     method: 'PUT',
-    body: profileData,
+    token,
+    body: JSON.stringify(profileData),
   });
 }
 
-export async function updateSecuritySettings(securityData: {
+export async function updateSecuritySettings(
+  token: string,
+  securityData: {
   password?: string;
   twoFactorEnabled?: boolean;
   sessionTimeout?: number;
-}) {
+},
+) {
   return apiFetch('/settings/personal/security', {
     method: 'PUT',
-    body: securityData,
+    token,
+    body: JSON.stringify(securityData),
   });
 }
 
-export async function fetchPersonalPreferences() {
+export async function fetchPersonalPreferences(token: string) {
   return apiFetch('/settings/personal/preferences', {
     method: 'GET',
+    token,
   });
 }
 
-export async function updatePersonalPreferences(preferences: {
+export async function updatePersonalPreferences(
+  token: string,
+  preferences: {
   notifications?: {
     email?: boolean;
     push?: boolean;
@@ -126,37 +161,49 @@ export async function updatePersonalPreferences(preferences: {
     profileVisibility?: 'public' | 'private' | 'workspace';
     showOnlineStatus?: boolean;
   };
-}) {
+},
+) {
   return apiFetch('/settings/personal/preferences', {
     method: 'PUT',
-    body: preferences,
+    token,
+    body: JSON.stringify(preferences),
   });
 }
 
 // API Management
-export async function createApiKey(keyData: {
+export async function createApiKey(
+  token: string,
+  keyData: {
   label: string;
   description?: string;
   scopes: string[];
   expiresAt?: string;
-}) {
-  return apiFetch('/settings/api/keys', {
+  metadata?: Record<string, unknown>;
+},
+) {
+  return apiFetch<{ token: string; key: WorkspaceApiKey }>('/settings/api/keys', {
     method: 'POST',
-    body: keyData,
+    token,
+    body: JSON.stringify(keyData),
   });
 }
 
-export async function revokeApiKey(keyId: string) {
-  return apiFetch(`/settings/api/keys/${keyId}`, {
+export async function revokeApiKey(token: string, keyId: string) {
+  return apiFetch<{ status: string }>(`/settings/api/keys/${keyId}`, {
     method: 'DELETE',
+    token,
   });
 }
 
-export async function fetchApiKeyUsage(keyId: string, params?: {
+export async function fetchApiKeyUsage(
+  token: string,
+  keyId: string,
+  params?: {
   startDate?: string;
   endDate?: string;
   limit?: number;
-}) {
+},
+) {
   const searchParams = new URLSearchParams();
   if (params?.startDate) searchParams.set('startDate', params.startDate);
   if (params?.endDate) searchParams.set('endDate', params.endDate);
@@ -164,77 +211,103 @@ export async function fetchApiKeyUsage(keyId: string, params?: {
 
   return apiFetch(`/settings/api/keys/${keyId}/usage?${searchParams.toString()}`, {
     method: 'GET',
+    token,
   });
 }
 
-export async function rotateApiKey(keyId: string) {
-  return apiFetch(`/settings/api/keys/${keyId}/rotate`, {
+export async function rotateApiKey(token: string, keyId: string) {
+  return apiFetch<{ token?: string }>(`/settings/api/keys/${keyId}/rotate`, {
     method: 'PUT',
+    token,
   });
 }
 
 // Integration Settings
-export async function fetchIntegrationStatus() {
+export async function fetchIntegrationStatus(token: string) {
   return apiFetch('/settings/integrations/status', {
     method: 'GET',
+    token,
   });
 }
 
-export async function updateEnvironmentStatus(environmentId: string, status: 'active' | 'inactive') {
+export async function updateEnvironmentStatus(
+  token: string,
+  environmentId: string,
+  status: 'active' | 'inactive',
+) {
   return apiFetch(`/settings/environments/${environmentId}/status`, {
     method: 'PUT',
-    body: { status },
+    token,
+    body: JSON.stringify({ status }),
   });
 }
 
-export async function configureSSO(ssoData: {
+export async function configureSSO(
+  token: string,
+  ssoData: {
   provider: 'google' | 'microsoft' | 'okta' | 'auth0';
   clientId: string;
   clientSecret: string;
   enabled: boolean;
-}) {
+},
+) {
   return apiFetch('/settings/sso/configure', {
     method: 'POST',
-    body: ssoData,
+    token,
+    body: JSON.stringify(ssoData),
   });
 }
 
-export async function configureLDAP(ldapData: {
+export async function configureLDAP(
+  token: string,
+  ldapData: {
   host: string;
   port: number;
   baseDn: string;
   bindDn: string;
   bindPassword: string;
   enabled: boolean;
-}) {
+},
+) {
   return apiFetch('/settings/ldap/configure', {
     method: 'POST',
-    body: ldapData,
+    token,
+    body: JSON.stringify(ldapData),
   });
 }
 
-export async function configureLogDestination(destinationData: {
+export async function configureLogDestination(
+  token: string,
+  destinationData: {
   destination: 'elasticsearch' | 'splunk' | 'datadog' | 'custom';
   endpoint: string;
   apiKey?: string;
   enabled: boolean;
-}) {
+},
+) {
   return apiFetch('/settings/logs/configure', {
     method: 'POST',
-    body: destinationData,
+    token,
+    body: JSON.stringify(destinationData),
   });
 }
 
 // Feature Gates
-export async function fetchFeatureGates() {
+export async function fetchFeatureGates(token: string) {
   return apiFetch('/settings/features/gates', {
     method: 'GET',
+    token,
   });
 }
 
-export async function requestFeatureAccess(featureId: string, reason?: string) {
+export async function requestFeatureAccess(
+  token: string,
+  featureId: string,
+  reason?: string,
+) {
   return apiFetch('/settings/features/request-access', {
     method: 'POST',
-    body: { featureId, reason },
+    token,
+    body: JSON.stringify({ featureId, reason }),
   });
 }

@@ -7,6 +7,7 @@ export interface WebhookRegistration {
     path: string;
     method: 'GET' | 'POST';
     respondMode: 'immediate' | 'on_last_node' | 'via_node';
+    description: string | null;
     enabled: boolean;
     createdAt: Date;
 }
@@ -31,6 +32,7 @@ export declare class WorkflowWebhookService {
         method?: 'GET' | 'POST';
         respondMode?: 'immediate' | 'on_last_node' | 'via_node';
         createdBy?: string | null;
+        description?: string | null;
     }): Promise<WebhookRegistration>;
     getRegistrationByToken(token: string): Promise<WebhookRegistration>;
     recordEvent(params: {

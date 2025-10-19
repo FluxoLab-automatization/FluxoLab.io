@@ -22,35 +22,70 @@ let WorkflowQueueService = WorkflowQueueService_1 = class WorkflowQueueService {
     logger = new common_1.Logger(WorkflowQueueService_1.name);
     connection;
     deliverQueue;
-    scheduler;
+    deliverEvents;
+    enabled;
     constructor(config) {
         const redisUrl = config.get('REDIS_URL', { infer: true }) ?? 'redis://localhost:6379';
+        const isTest = process.env.NODE_ENV === 'test';
+        this.enabled = !isTest && Boolean(redisUrl);
+        if (!this.enabled) {
+            this.connection = null;
+            this.deliverQueue = null;
+            this.deliverEvents = null;
+            return;
+        }
         this.connection = new ioredis_1.default(redisUrl, {
             maxRetriesPerRequest: null,
         });
-        this.deliverQueue = new bullmq_1.Queue('workflow:deliver', {
+        this.deliverQueue = new bullmq_1.Queue('workflow-deliver', {
+            connection: this.connection,
+            defaultJobOptions: {
+                attempts: 3,
+                backoff: { type: 'exponential', delay: 2000 },
+                removeOnComplete: 100,
+                removeOnFail: 1000,
+            },
+        });
+        this.deliverEvents = new bullmq_1.QueueEvents('workflow-deliver', {
             connection: this.connection,
         });
-        this.scheduler = new bullmq_1.QueueScheduler('workflow:deliver', {
-            connection: this.connection,
+        this.deliverEvents.on('failed', ({ jobId, failedReason }) => {
+            this.logger.warn(`deliver job ${jobId} failed: ${failedReason}`);
+        });
+        this.deliverEvents.on('completed', ({ jobId }) => {
+            this.logger.debug(`deliver job ${jobId} completed`);
         });
     }
     async onModuleInit() {
-        await this.scheduler.waitUntilReady();
-        this.logger.log('Workflow queue scheduler ready');
+        if (!this.enabled) {
+            this.logger.log('Workflow queue disabled in current environment');
+            return;
+        }
+        try {
+            const pong = await this.connection.ping();
+            this.logger.log(`Redis ping: ${pong}`);
+        }
+        catch (error) {
+            this.logger.error('Redis ping failed', error);
+        }
+        this.logger.log('Workflow queue ready (BullMQ v4+)');
     }
     async onModuleDestroy() {
-        await Promise.all([this.deliverQueue.close(), this.scheduler.close(), this.connection.quit()]);
+        if (!this.enabled) {
+            return;
+        }
+        await Promise.all([
+            this.deliverEvents?.close(),
+            this.deliverQueue?.close(),
+            this.connection?.quit(),
+        ]);
     }
-    async enqueueDeliver(payload) {
-        const job = await this.deliverQueue.add('deliver', payload, {
-            removeOnComplete: true,
-            attempts: 3,
-            backoff: {
-                type: 'exponential',
-                delay: 2000,
-            },
-        });
+    async enqueueDeliver(payload, opts) {
+        if (!this.enabled || !this.deliverQueue) {
+            this.logger.debug('Queue disabled, skipping enqueue', payload);
+            return 'inline-execution';
+        }
+        const job = await this.deliverQueue.add('deliver', payload, opts);
         return job.id;
     }
     getQueue() {

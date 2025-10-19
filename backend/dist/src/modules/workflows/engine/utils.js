@@ -11,7 +11,8 @@ function evaluateTemplate(template, scope) {
         const trimmed = expression.trim();
         if (trimmed.startsWith('$json.')) {
             const path = trimmed.replace(/^\$json\./, '');
-            const value = lookup(path, scope.json ?? scope.$json ?? {});
+            const jsonScope = (scope.json ?? scope.$json ?? {});
+            const value = lookup(path, jsonScope);
             return value === undefined || value === null ? '' : String(value);
         }
         if (trimmed === '$json') {

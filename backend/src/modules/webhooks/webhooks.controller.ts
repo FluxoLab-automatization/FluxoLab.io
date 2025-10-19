@@ -88,6 +88,8 @@ export class WebhooksController {
       // fallback to legacy handler
       const response = await this.webhooksService.receiveWebhook(
         token,
+        req.method,
+        req.query as Record<string, unknown>,
         body,
         headers,
         req.rawBody,

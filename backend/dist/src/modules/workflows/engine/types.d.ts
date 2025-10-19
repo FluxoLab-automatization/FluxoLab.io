@@ -31,3 +31,7 @@ export interface NodeHandler {
         respond?(status: number, payload: unknown): Promise<void>;
     }): Promise<NodeHandlerResult>;
 }
+export interface WorkflowDefinition {
+    nodes: WorkflowNodeDefinition[];
+    connections: WorkflowConnectionDefinition[];
+}

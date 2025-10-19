@@ -17,6 +17,7 @@ export declare class WebhooksController {
         message: string;
         token: string;
         webhookUrl: string;
+        registrationId: string;
     }>;
     verifyWebhook(token: string, query: VerifyQuery, headers: Record<string, unknown>, res: Response): Promise<void>;
     receiveWebhook(token: string, body: unknown, headers: Record<string, unknown>, req: Request & {

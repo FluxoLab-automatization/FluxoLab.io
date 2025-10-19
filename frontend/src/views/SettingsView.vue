@@ -4,7 +4,13 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useSessionStore } from '../stores/session.store';
-import { fetchSettingsSummary, fetchUsageAlerts } from '../services/settings.service';
+import {
+  fetchSettingsSummary,
+  fetchUsageAlerts,
+  createApiKey,
+  rotateApiKey,
+  revokeApiKey,
+} from '../services/settings.service';
 import UsageChart from '../components/settings/UsageChart.vue';
 import PlanUpgrade from '../components/settings/PlanUpgrade.vue';
 import WorkflowCredentialsPanel from '../components/workflows/WorkflowCredentialsPanel.vue';
@@ -18,6 +24,7 @@ import type {
   LdapInfo,
   LogDestinationInfo,
   CommunityConnectorInfo,
+  UsageAlert,
 } from '../types/api';
 
 type SettingsSection =
@@ -52,8 +59,19 @@ const apiKeys = ref<WorkspaceApiKey[]>([]);
 const showUpgradeModal = ref(false);
 const showCancelModal = ref(false);
 const showAlertModal = ref(false);
-const usageAlerts = ref<any[]>([]);
+interface UsageAlertDisplay {
+  id: string;
+  title: string;
+  description: string;
+  enabled: boolean;
+  channel: string;
+  raw: UsageAlert;
+}
+
+const usageAlerts = ref<UsageAlertDisplay[]>([]);
 const loadingAlerts = ref(false);
+const apiKeyError = ref<string | null>(null);
+const apiKeyMessage = ref<string | null>(null);
 
 const DEFAULT_PLAN: SettingsSummary['plan'] = {
   planCode: 'free',
@@ -154,6 +172,8 @@ async function loadSummary() {
   }
   loadingSummary.value = true;
   summaryError.value = null;
+  apiKeyError.value = null;
+  apiKeyMessage.value = null;
   try {
     const result = await fetchSettingsSummary(token.value);
     summary.value = result;
@@ -169,19 +189,23 @@ async function loadSummary() {
 watch(token, (newToken) => {
   if (newToken) {
     void loadSummary();
+    void loadUsageAlerts();
   } else {
     summary.value = null;
     apiKeys.value = [];
+    usageAlerts.value = [];
   }
 });
 
 async function loadUsageAlerts() {
-  if (!token.value) return;
-
+  if (!token.value) {
+    usageAlerts.value = [];
+    return;
+  }
   loadingAlerts.value = true;
   try {
-    const response = await fetchUsageAlerts();
-    usageAlerts.value = response.alerts || [];
+    const response = await fetchUsageAlerts(token.value);
+    usageAlerts.value = (response.alerts ?? []).map(presentUsageAlert);
   } catch (error) {
     console.error('Failed to load usage alerts:', error);
   } finally {
@@ -206,7 +230,7 @@ function handleUpgradeError(error: string) {
   // Show error message
 }
 
-function editAlert(alert: any) {
+function editAlert(alert: UsageAlertDisplay) {
   // Open alert editing modal
   console.log('Edit alert:', alert);
 }
@@ -326,6 +350,47 @@ function formatStatus(status: string): string {
   }
 }
 
+function metricLabel(metric: string): string {
+  switch (metric) {
+    case 'webhooks':
+      return 'Eventos de Webhook';
+    case 'users':
+      return 'Usuários ativos';
+    case 'workflows':
+      return 'Workflows ativos';
+    case 'all':
+      return 'Consumo geral';
+    default:
+      return metric;
+  }
+}
+
+function conditionLabel(condition: UsageAlert['condition']): string {
+  switch (condition) {
+    case 'greater_than':
+      return 'Aciona quando exceder';
+    case 'less_than':
+      return 'Aciona quando ficar abaixo de';
+    case 'equals':
+      return 'Aciona quando igual a';
+    default:
+      return condition;
+  }
+}
+
+function presentUsageAlert(alert: UsageAlert): UsageAlertDisplay {
+  const title = metricLabel(alert.metric);
+  const description = `${conditionLabel(alert.condition)} ${alert.threshold} (${alert.window}) via ${alert.channel}`;
+  return {
+    id: alert.id,
+    title,
+    description,
+    enabled: alert.enabled,
+    channel: alert.channel,
+    raw: alert,
+  };
+}
+
 function gateStatusLabel(gate: FeatureGateInfo | undefined): string {
   if (!gate) return 'Indisponivel';
   switch (gate.status) {
@@ -375,27 +440,55 @@ async function handleCreateApiKey() {
   }
   creatingApiKey.value = true;
   revealedApiKey.value = null;
-  const keyId = 'key-' + Date.now();
-  const randomA = Math.random().toString(36).slice(2, 10).toUpperCase();
-  const randomB = Math.random().toString(36).slice(2, 6).toUpperCase();
-  const keyValue = 'FLX-' + randomA + '-' + randomB;
-  setTimeout(() => {
-    apiKeys.value = [
-      {
-        id: keyId,
-        label: 'Nova chave programatica',
-        keyPreview: randomA.slice(0, 4) + '...' + randomB,
-        scopes: ['projects:read'],
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        lastUsedAt: null,
-        createdBy: user.value ? { id: user.value.id, email: user.value.email } : null,
-      },
-      ...apiKeys.value,
-    ];
-    revealedApiKey.value = keyValue;
+  apiKeyError.value = null;
+  apiKeyMessage.value = null;
+  try {
+    const label = `API Key ${new Date().toLocaleString('pt-BR')}`;
+    const response = await createApiKey(token.value, {
+      label,
+      scopes: ['workflows:read'],
+    });
+    await loadSummary();
+    revealedApiKey.value = response.token;
+    apiKeyMessage.value = 'Nova chave criada com sucesso. Guarde o valor exibido abaixo com segurança.';
+  } catch (error) {
+    apiKeyError.value =
+      error instanceof Error ? error.message : 'Falha ao criar chave de API.';
+  } finally {
     creatingApiKey.value = false;
-  }, 900);
+  }
+}
+
+async function handleRotateKey(key: WorkspaceApiKey) {
+  if (!token.value) return;
+  apiKeyError.value = null;
+  apiKeyMessage.value = null;
+  try {
+    const response = await rotateApiKey(token.value, key.id);
+    const newToken = response?.token ?? null;
+    await loadSummary();
+    if (newToken) {
+      revealedApiKey.value = newToken;
+      apiKeyMessage.value = 'Chave rotacionada. Utilize o novo token exibido abaixo.';
+    }
+  } catch (error) {
+    apiKeyError.value =
+      error instanceof Error ? error.message : 'Nao foi possivel rotacionar a chave.';
+  }
+}
+
+async function handleRevokeKey(key: WorkspaceApiKey) {
+  if (!token.value) return;
+  apiKeyError.value = null;
+  apiKeyMessage.value = null;
+  try {
+    await revokeApiKey(token.value, key.id);
+    apiKeyMessage.value = 'Chave revogada com sucesso.';
+    await loadSummary();
+  } catch (error) {
+    apiKeyError.value =
+      error instanceof Error ? error.message : 'Nao foi possivel revogar a chave.';
+  }
 }
 </script>
 
@@ -510,14 +603,21 @@ async function handleCreateApiKey() {
           <div v-else class="alerts-list">
             <div v-for="alert in usageAlerts" :key="alert.id" class="alert-item">
               <div class="alert-info">
-                <h4>{{ alert.metric }}</h4>
+                <h4>{{ alert.title }}</h4>
                 <p>{{ alert.description }}</p>
+                <span class="alert-channel">Canal: {{ alert.channel }}</span>
               </div>
               <div class="alert-actions">
-                <button @click="editAlert(alert)" class="btn btn--secondary btn--sm">
+                <button
+                  @click="editAlert(alert)"
+                  class="settings-button settings-button--secondary settings-button--compact"
+                >
                   Editar
                 </button>
-                <button @click="deleteAlert(alert.id)" class="btn btn--danger btn--sm">
+                <button
+                  @click="deleteAlert(alert.id)"
+                  class="settings-button settings-button--danger settings-button--compact"
+                >
                   Remover
                 </button>
               </div>
@@ -587,7 +687,7 @@ async function handleCreateApiKey() {
           <button
             type="button"
             class="settings-button settings-button--primary"
-            :disabled="creatingApiKey"
+            :disabled="creatingApiKey || !token"
             @click="handleCreateApiKey"
           >
             {{ creatingApiKey ? 'Gerando chave...' : 'Criar chave API' }}
@@ -599,6 +699,8 @@ async function handleCreateApiKey() {
             <strong>Copie sua nova chave:</strong>
             <code>{{ revealedApiKey }}</code>
           </div>
+          <p v-if="apiKeyMessage" class="settings-feedback settings-feedback--success">{{ apiKeyMessage }}</p>
+          <p v-if="apiKeyError" class="settings-feedback settings-feedback--error">{{ apiKeyError }}</p>
         </article>
         <div class="settings-card settings-card--table">
           <table>
@@ -609,11 +711,13 @@ async function handleCreateApiKey() {
                 <th>Ultimo uso</th>
                 <th>Preview</th>
                 <th>Escopos</th>
+                <th>Status</th>
+                <th>Acoes</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="apiKeys.length === 0">
-                <td colspan="5" class="settings-empty">Nenhuma chave cadastrada.</td>
+                <td colspan="7" class="settings-empty">Nenhuma chave cadastrada.</td>
               </tr>
               <tr v-for="key in apiKeys" :key="key.id">
                 <td>{{ key.label }}</td>
@@ -621,6 +725,23 @@ async function handleCreateApiKey() {
                 <td>{{ formatDate(key.lastUsedAt) }}</td>
                 <td><code>{{ key.keyPreview }}</code></td>
                 <td>{{ key.scopes.join(', ') }}</td>
+                <td>{{ formatStatus(key.status) }}</td>
+                <td class="api-key-actions">
+                  <button
+                    class="settings-button settings-button--secondary settings-button--compact"
+                    type="button"
+                    @click="handleRotateKey(key)"
+                  >
+                    Rotacionar
+                  </button>
+                  <button
+                    class="settings-button settings-button--danger settings-button--compact"
+                    type="button"
+                    @click="handleRevokeKey(key)"
+                  >
+                    Revogar
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -1084,10 +1205,34 @@ async function handleCreateApiKey() {
   color: #c7d2fe;
 }
 
+.settings-button--danger {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fecaca;
+}
+
+.settings-button--compact {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.75rem;
+}
+
 .settings-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+.settings-feedback {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.settings-feedback--success {
+  color: #34d399;
+}
+
+.settings-feedback--error {
+  color: #fca5a5;
 }
 
 .settings-pill {
@@ -1311,6 +1456,18 @@ code {
   color: rgba(148, 163, 184, 0.85);
   margin: 0;
   font-size: 0.875rem;
+}
+
+.alert-channel {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: rgba(148, 163, 184, 0.65);
+}
+
+.api-key-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .alert-actions {

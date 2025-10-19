@@ -20,13 +20,18 @@ const workspaces_repository_1 = require("./repositories/workspaces.repository");
 const workspace_members_repository_1 = require("./repositories/workspace-members.repository");
 const workspace_settings_repository_1 = require("./repositories/workspace-settings.repository");
 const workspace_api_keys_repository_1 = require("./repositories/workspace-api-keys.repository");
+const workspace_api_key_audit_repository_1 = require("./repositories/workspace-api-key-audit.repository");
 const workspace_environments_repository_1 = require("./repositories/workspace-environments.repository");
 const workspace_integrations_repository_1 = require("./repositories/workspace-integrations.repository");
 const workspace_usage_repository_1 = require("./repositories/workspace-usage.repository");
+const workspace_usage_alerts_repository_1 = require("./repositories/workspace-usage-alerts.repository");
+const workspace_integration_events_repository_1 = require("./repositories/workspace-integration-events.repository");
 const workspace_settings_service_1 = require("./workspace-settings.service");
 const workspace_provisioning_service_1 = require("./workspace-provisioning.service");
 const usage_analytics_service_1 = require("./services/usage-analytics.service");
 const plan_management_service_1 = require("./services/plan-management.service");
+const workspace_api_keys_service_1 = require("./services/workspace-api-keys.service");
+const workspace_integrations_service_1 = require("./services/workspace-integrations.service");
 let WorkspaceModule = class WorkspaceModule {
 };
 exports.WorkspaceModule = WorkspaceModule;
@@ -38,6 +43,8 @@ exports.WorkspaceModule = WorkspaceModule = __decorate([
             workspace_service_1.WorkspaceService,
             workspace_settings_service_1.WorkspaceSettingsService,
             workspace_provisioning_service_1.WorkspaceProvisioningService,
+            workspace_api_keys_service_1.WorkspaceApiKeysService,
+            workspace_integrations_service_1.WorkspaceIntegrationsService,
             usage_analytics_service_1.UsageAnalyticsService,
             plan_management_service_1.PlanManagementService,
             conversations_repository_1.ConversationsRepository,
@@ -47,14 +54,19 @@ exports.WorkspaceModule = WorkspaceModule = __decorate([
             workspace_members_repository_1.WorkspaceMembersRepository,
             workspace_settings_repository_1.WorkspaceSettingsRepository,
             workspace_api_keys_repository_1.WorkspaceApiKeysRepository,
+            workspace_api_key_audit_repository_1.WorkspaceApiKeyAuditRepository,
             workspace_environments_repository_1.WorkspaceEnvironmentsRepository,
             workspace_integrations_repository_1.WorkspaceIntegrationsRepository,
             workspace_usage_repository_1.WorkspaceUsageRepository,
+            workspace_usage_alerts_repository_1.WorkspaceUsageAlertsRepository,
+            workspace_integration_events_repository_1.WorkspaceIntegrationEventsRepository,
         ],
         exports: [
             workspace_service_1.WorkspaceService,
             workspace_settings_service_1.WorkspaceSettingsService,
             workspace_provisioning_service_1.WorkspaceProvisioningService,
+            workspace_api_keys_service_1.WorkspaceApiKeysService,
+            workspace_integrations_service_1.WorkspaceIntegrationsService,
             usage_analytics_service_1.UsageAnalyticsService,
             plan_management_service_1.PlanManagementService,
             workspaces_repository_1.WorkspacesRepository,
@@ -62,6 +74,9 @@ exports.WorkspaceModule = WorkspaceModule = __decorate([
             workspace_api_keys_repository_1.WorkspaceApiKeysRepository,
             workspace_integrations_repository_1.WorkspaceIntegrationsRepository,
             workspace_usage_repository_1.WorkspaceUsageRepository,
+            workspace_usage_alerts_repository_1.WorkspaceUsageAlertsRepository,
+            workspace_integration_events_repository_1.WorkspaceIntegrationEventsRepository,
+            workspace_api_key_audit_repository_1.WorkspaceApiKeyAuditRepository,
         ],
     })
 ], WorkspaceModule);

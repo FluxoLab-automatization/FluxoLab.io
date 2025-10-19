@@ -14,6 +14,7 @@ export interface PresentedProject {
 }
 export interface PresentedActivity {
     id: string;
+    workspaceId: string;
     entityType: string;
     entityId: string | null;
     action: string;

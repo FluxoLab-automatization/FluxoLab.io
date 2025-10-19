@@ -3,8 +3,8 @@ import { DatabaseService } from '../../../shared/database/database.service';
 
 export interface WebhookEventRecord {
   id: string;
-  registration_id: string;
-  event_type: string | null;
+  webhook_id: string;
+  http_method: string;
   status: string;
   signature_valid: boolean;
   received_at: Date;
@@ -46,10 +46,10 @@ export class WorkspaceWebhookRepository {
     const result = await this.pool.query<WebhookEventRecord>(
       `
         SELECT id,
-               registration_id,
-               event_type,
+               webhook_id,
+               http_method,
                status,
-               signature_valid,
+               (signature IS NOT NULL) AS signature_valid,
                received_at
         FROM webhook_events
         WHERE workspace_id = $1

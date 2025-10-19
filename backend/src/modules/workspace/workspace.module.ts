@@ -11,13 +11,18 @@ import { WorkspacesRepository } from './repositories/workspaces.repository';
 import { WorkspaceMembersRepository } from './repositories/workspace-members.repository';
 import { WorkspaceSettingsRepository } from './repositories/workspace-settings.repository';
 import { WorkspaceApiKeysRepository } from './repositories/workspace-api-keys.repository';
+import { WorkspaceApiKeyAuditRepository } from './repositories/workspace-api-key-audit.repository';
 import { WorkspaceEnvironmentsRepository } from './repositories/workspace-environments.repository';
 import { WorkspaceIntegrationsRepository } from './repositories/workspace-integrations.repository';
 import { WorkspaceUsageRepository } from './repositories/workspace-usage.repository';
+import { WorkspaceUsageAlertsRepository } from './repositories/workspace-usage-alerts.repository';
+import { WorkspaceIntegrationEventsRepository } from './repositories/workspace-integration-events.repository';
 import { WorkspaceSettingsService } from './workspace-settings.service';
 import { WorkspaceProvisioningService } from './workspace-provisioning.service';
 import { UsageAnalyticsService } from './services/usage-analytics.service';
 import { PlanManagementService } from './services/plan-management.service';
+import { WorkspaceApiKeysService } from './services/workspace-api-keys.service';
+import { WorkspaceIntegrationsService } from './services/workspace-integrations.service';
 
 @Module({
   imports: [forwardRef(() => AuthModule), BillingModule],
@@ -26,6 +31,8 @@ import { PlanManagementService } from './services/plan-management.service';
     WorkspaceService,
     WorkspaceSettingsService,
     WorkspaceProvisioningService,
+    WorkspaceApiKeysService,
+    WorkspaceIntegrationsService,
     UsageAnalyticsService,
     PlanManagementService,
     ConversationsRepository,
@@ -35,14 +42,19 @@ import { PlanManagementService } from './services/plan-management.service';
     WorkspaceMembersRepository,
     WorkspaceSettingsRepository,
     WorkspaceApiKeysRepository,
+    WorkspaceApiKeyAuditRepository,
     WorkspaceEnvironmentsRepository,
     WorkspaceIntegrationsRepository,
     WorkspaceUsageRepository,
+    WorkspaceUsageAlertsRepository,
+    WorkspaceIntegrationEventsRepository,
   ],
   exports: [
     WorkspaceService,
     WorkspaceSettingsService,
     WorkspaceProvisioningService,
+    WorkspaceApiKeysService,
+    WorkspaceIntegrationsService,
     UsageAnalyticsService,
     PlanManagementService,
     WorkspacesRepository,
@@ -50,6 +62,9 @@ import { PlanManagementService } from './services/plan-management.service';
     WorkspaceApiKeysRepository,
     WorkspaceIntegrationsRepository,
     WorkspaceUsageRepository,
+    WorkspaceUsageAlertsRepository,
+    WorkspaceIntegrationEventsRepository,
+    WorkspaceApiKeyAuditRepository,
   ],
 })
 export class WorkspaceModule {}

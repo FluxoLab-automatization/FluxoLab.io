@@ -9,6 +9,7 @@ export interface WebhookRegistration {
   path: string;
   method: 'GET' | 'POST';
   respondMode: 'immediate' | 'on_last_node' | 'via_node';
+  description: string | null;
   enabled: boolean;
   createdAt: Date;
 }
@@ -21,6 +22,7 @@ interface WebhookRegistrationRow {
   path: string;
   method: 'GET' | 'POST';
   respond_mode: 'immediate' | 'on_last_node' | 'via_node';
+  description: string | null;
   enabled: boolean;
   created_at: Date;
 }
@@ -51,6 +53,7 @@ export class WorkflowWebhookService {
     method?: 'GET' | 'POST';
     respondMode?: 'immediate' | 'on_last_node' | 'via_node';
     createdBy?: string | null;
+    description?: string | null;
   }): Promise<WebhookRegistration> {
     const result = await this.pool.query<WebhookRegistrationRow>(
       `
@@ -61,9 +64,10 @@ export class WorkflowWebhookService {
           path,
           method,
           respond_mode,
+          description,
           created_by
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING id,
                   workspace_id,
                   workflow_id,
@@ -71,6 +75,7 @@ export class WorkflowWebhookService {
                   path,
                   method,
                   respond_mode,
+                  description,
                   enabled,
                   created_at
       `,
@@ -81,6 +86,7 @@ export class WorkflowWebhookService {
         params.path,
         params.method ?? 'POST',
         params.respondMode ?? 'via_node',
+        params.description ?? null,
         params.createdBy ?? null,
       ],
     );
@@ -98,6 +104,7 @@ export class WorkflowWebhookService {
                path,
                method,
                respond_mode,
+               description,
                enabled,
                created_at
           FROM webhook_registrations
@@ -233,6 +240,7 @@ export class WorkflowWebhookService {
       path: row.path,
       method: row.method,
       respondMode: row.respond_mode,
+      description: row.description,
       enabled: row.enabled,
       createdAt: row.created_at,
     };

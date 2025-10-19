@@ -15,6 +15,7 @@ const class_transformer_1 = require("class-transformer");
 class WorkflowNodeDto {
     id;
     type;
+    name;
     params;
 }
 __decorate([
@@ -25,6 +26,11 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], WorkflowNodeDto.prototype, "type", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WorkflowNodeDto.prototype, "name", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Object)
@@ -44,6 +50,7 @@ __decorate([
 ], WorkflowConnectionDto.prototype, "to", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], WorkflowConnectionDto.prototype, "output", void 0);
 class WorkflowDefinitionDto {

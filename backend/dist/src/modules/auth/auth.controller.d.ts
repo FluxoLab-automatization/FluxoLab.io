@@ -17,7 +17,6 @@ export declare class AuthController {
             email: string;
             displayName: string;
             avatarColor: string;
-            n: any;
             workspaceId: string;
         };
     }>;

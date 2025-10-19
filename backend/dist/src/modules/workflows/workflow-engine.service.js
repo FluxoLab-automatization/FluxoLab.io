@@ -55,7 +55,15 @@ let WorkflowEngineService = WorkflowEngineService_1 = class WorkflowEngineServic
     }
     async executeDefinition(version, options) {
         const { definition } = version;
-        const nodes = new Map((definition.nodes ?? []).map((node) => [String(node.id), node]));
+        const nodes = new Map((definition.nodes ?? []).map((node) => {
+            const normalized = {
+                id: String(node.id),
+                type: node.type,
+                name: node.name,
+                params: node.params ?? {},
+            };
+            return [normalized.id, normalized];
+        }));
         const connections = (definition.connections ?? []).map((conn) => ({
             from: String(conn.from),
             to: String(conn.to),
@@ -98,7 +106,13 @@ let WorkflowEngineService = WorkflowEngineService_1 = class WorkflowEngineServic
                 executionId: options.executionId,
                 correlationId: options.correlationId ?? null,
                 params: node.params ?? {},
-                getCredential: (id) => this.credentialsService.getCredential(options.workspaceId, id),
+                getCredential: async (id) => {
+                    const credential = await this.credentialsService.getCredential(options.workspaceId, id);
+                    if (!credential) {
+                        throw new Error(`Credential ${id} not found for workspace ${options.workspaceId}`);
+                    }
+                    return credential.secret;
+                },
                 log: (message, metadata) => this.logger.debug({
                     executionId: options.executionId,
                     nodeId,

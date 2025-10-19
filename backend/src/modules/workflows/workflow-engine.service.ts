@@ -5,6 +5,7 @@ import { WorkflowExecutionsService } from './workflow-executions.service';
 import { WorkflowResponseRegistry } from './workflow-response.registry';
 import { resolveNodeHandler } from './engine/node-registry';
 import {
+  WorkflowConnectionDefinition,
   WorkflowItem,
   WorkflowNodeDefinition,
   WorkflowRuntimeContext,

@@ -35,19 +35,33 @@ let WorkflowsController = class WorkflowsController {
         this.engine = engine;
     }
     async createWorkflow(user, payload) {
+        const workspaceId = user.workspaceId;
+        const definition = {
+            nodes: payload.definition.nodes.map((node) => ({
+                id: node.id,
+                type: node.type,
+                name: node.name,
+                params: node.params ?? {},
+            })),
+            connections: payload.definition.connections.map((conn) => ({
+                from: conn.from,
+                to: conn.to,
+                output: conn.output,
+            })),
+        };
         const workflow = await this.workflows.createWorkflow({
-            workspaceId: user.workspaceId,
+            workspaceId,
             name: payload.name,
             createdBy: user.id,
             tags: payload.tags,
         });
         const version = await this.workflows.createVersion({
             workflowId: workflow.id,
-            definition: payload.definition,
-            checksum: checksum(payload.definition),
+            definition,
+            checksum: checksum(definition),
             createdBy: user.id,
         });
-        await this.workflows.activateVersion(user.workspaceId, workflow.id, version.id);
+        await this.workflows.activateVersion(workspaceId, workflow.id, version.id);
         return {
             status: 'created',
             workflow: {
@@ -57,14 +71,15 @@ let WorkflowsController = class WorkflowsController {
         };
     }
     async executeWorkflow(user, workflowId, body) {
-        const activeVersion = await this.workflows.getActiveVersion(user.workspaceId, workflowId);
+        const workspaceId = user.workspaceId;
+        const activeVersion = await this.workflows.getActiveVersion(workspaceId, workflowId);
         const execution = await this.executions.createExecution({
-            workspaceId: user.workspaceId,
+            workspaceId,
             workflowId,
             workflowVersionId: activeVersion.id,
         });
         await this.engine.runInline({
-            workspaceId: user.workspaceId,
+            workspaceId,
             workflowId,
             executionId: execution.id,
             initialItems: [{ json: body }],

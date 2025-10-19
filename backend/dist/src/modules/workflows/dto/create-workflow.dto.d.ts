@@ -1,6 +1,7 @@
 declare class WorkflowNodeDto {
     id: string;
     type: string;
+    name?: string;
     params?: Record<string, unknown>;
 }
 declare class WorkflowConnectionDto {

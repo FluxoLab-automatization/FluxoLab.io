@@ -103,6 +103,15 @@ export class WorkflowOrchestratorService {
         ],
       });
 
+      try {
+        await this.webhookService.updateEventStatus(eventId, 'processed');
+      } catch (updateError) {
+        this.logger.error(
+          'Failed to update webhook event status after workflow success',
+          updateError,
+        );
+      }
+
       const durationSeconds = (Date.now() - startedAt) / 1000;
       this.metrics.incrementCounter('workflow_executions_total', {
         trigger_type: 'webhook',
@@ -121,6 +130,14 @@ export class WorkflowOrchestratorService {
         workspace_id: registration.workspaceId,
         status: 'failed',
       });
+      try {
+        await this.webhookService.updateEventStatus(eventId, 'failed');
+      } catch (updateError) {
+        this.logger.error(
+          'Failed to update webhook event status after workflow error',
+          updateError,
+        );
+      }
       this.metrics.recordError('workflow_execution_failed', 'workflows');
       throw error;
     }

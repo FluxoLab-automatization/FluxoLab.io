@@ -201,4 +201,135 @@ export class WorkspaceIntegrationsRepository {
 
     return result.rows;
   }
+
+  async upsertSsoConfig(params: {
+    workspaceId: string;
+    provider: string;
+    status: string;
+    settings?: Record<string, unknown>;
+    metadata?: Record<string, unknown>;
+  }): Promise<void> {
+    await this.pool.query(
+      `
+        INSERT INTO workspace_sso_configs (
+          workspace_id,
+          provider,
+          status,
+          settings,
+          metadata,
+          enabled_at,
+          disabled_at
+        )
+        VALUES ($1, $2, $3, $4::jsonb, $5::jsonb,
+                CASE WHEN $3 = 'active' THEN NOW() ELSE NULL END,
+                CASE WHEN $3 = 'disabled' THEN NOW() ELSE NULL END)
+        ON CONFLICT (workspace_id, provider)
+        DO UPDATE SET
+          status = EXCLUDED.status,
+          settings = EXCLUDED.settings,
+          metadata = EXCLUDED.metadata,
+          enabled_at = CASE
+            WHEN EXCLUDED.status = 'active' THEN NOW()
+            ELSE workspace_sso_configs.enabled_at
+          END,
+          disabled_at = CASE
+            WHEN EXCLUDED.status = 'disabled' THEN NOW()
+            ELSE workspace_sso_configs.disabled_at
+          END,
+          updated_at = NOW()
+      `,
+      [
+        params.workspaceId,
+        params.provider,
+        params.status,
+        params.settings ?? {},
+        params.metadata ?? {},
+      ],
+    );
+  }
+
+  async upsertLdapConfig(params: {
+    workspaceId: string;
+    status: string;
+    host?: string | null;
+    baseDn?: string | null;
+    settings?: Record<string, unknown>;
+    metadata?: Record<string, unknown>;
+  }): Promise<void> {
+    await this.pool.query(
+      `
+        INSERT INTO workspace_ldap_configs (
+          workspace_id,
+          host,
+          base_dn,
+          status,
+          settings,
+          metadata,
+          last_synced_at
+        )
+        VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, CASE WHEN $4 = 'configured' THEN NOW() ELSE NULL END)
+        ON CONFLICT (workspace_id)
+        DO UPDATE SET
+          host = EXCLUDED.host,
+          base_dn = EXCLUDED.base_dn,
+          status = EXCLUDED.status,
+          settings = EXCLUDED.settings,
+          metadata = EXCLUDED.metadata,
+          last_synced_at = CASE
+            WHEN EXCLUDED.status = 'configured' THEN NOW()
+            ELSE workspace_ldap_configs.last_synced_at
+          END,
+          updated_at = NOW()
+      `,
+      [
+        params.workspaceId,
+        params.host ?? null,
+        params.baseDn ?? null,
+        params.status,
+        params.settings ?? {},
+        params.metadata ?? {},
+      ],
+    );
+  }
+
+  async upsertLogDestination(params: {
+    workspaceId: string;
+    destination: string;
+    status: string;
+    config?: Record<string, unknown>;
+    metadata?: Record<string, unknown>;
+  }): Promise<void> {
+    await this.pool.query(
+      `
+        INSERT INTO workspace_log_destinations (
+          workspace_id,
+          destination,
+          status,
+          config,
+          metadata,
+          last_streamed_at
+        )
+        VALUES ($1, $2, $3, $4::jsonb, $5::jsonb,
+                CASE WHEN $3 = 'streaming' THEN NOW() ELSE NULL END)
+        ON CONFLICT (workspace_id, destination)
+        DO UPDATE SET
+          status = EXCLUDED.status,
+          config = EXCLUDED.config,
+          metadata = EXCLUDED.metadata,
+          last_streamed_at = CASE
+            WHEN EXCLUDED.status = 'streaming' THEN NOW()
+            ELSE workspace_log_destinations.last_streamed_at
+          END,
+          updated_at = NOW()
+      `,
+      [
+        params.workspaceId,
+        params.destination,
+        params.status,
+        params.config ?? {},
+        params.metadata ?? {},
+      ],
+    );
+  }
+
 }

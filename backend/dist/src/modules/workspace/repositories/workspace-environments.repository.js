@@ -57,6 +57,27 @@ let WorkspaceEnvironmentsRepository = class WorkspaceEnvironmentsRepository {
       `, [workspaceId]);
         return result.rows;
     }
+    async updateStatus(params) {
+        const result = await this.pool.query(`
+        UPDATE workspace_environments
+           SET status = $3,
+               updated_at = NOW()
+         WHERE workspace_id = $1
+           AND id = $2
+        RETURNING id,
+                  workspace_id,
+                  name,
+                  slug,
+                  environment_type,
+                  region,
+                  status,
+                  metadata,
+                  last_synced_at,
+                  created_at,
+                  updated_at
+      `, [params.workspaceId, params.environmentId, params.status]);
+        return result.rows[0] ?? null;
+    }
 };
 exports.WorkspaceEnvironmentsRepository = WorkspaceEnvironmentsRepository;
 exports.WorkspaceEnvironmentsRepository = WorkspaceEnvironmentsRepository = __decorate([

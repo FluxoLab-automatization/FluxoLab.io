@@ -1,43 +1,10 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
@@ -47,10 +14,9 @@ exports.WebhooksService = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const nestjs_pino_1 = require("nestjs-pino");
-const crypto = __importStar(require("crypto"));
+const crypto_1 = require("crypto");
 const security_service_1 = require("../../shared/security/security.service");
-const webhook_registrations_repository_1 = require("./repositories/webhook-registrations.repository");
-const webhook_events_repository_1 = require("./repositories/webhook-events.repository");
+const workflow_webhook_service_1 = require("../workflows/workflow-webhook.service");
 function isMetaEventPayload(value) {
     if (!value || typeof value !== 'object') {
         return false;
@@ -68,8 +34,7 @@ function isMetaEventPayload(value) {
     return true;
 }
 let WebhooksService = WebhooksService_1 = class WebhooksService {
-    registrationsRepository;
-    eventsRepository;
+    webhookService;
     securityService;
     config;
     logger;
@@ -77,9 +42,8 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
     receivingBasePath;
     verifyToken;
     appSecret;
-    constructor(registrationsRepository, eventsRepository, securityService, config, logger) {
-        this.registrationsRepository = registrationsRepository;
-        this.eventsRepository = eventsRepository;
+    constructor(webhookService, securityService, config, logger) {
+        this.webhookService = webhookService;
         this.securityService = securityService;
         this.config = config;
         this.logger = logger;
@@ -93,16 +57,25 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
         this.appSecret = this.config.get('APP_SECRET', { infer: true }) ?? '';
     }
     async generateWebhook(dto) {
-        const token = crypto.randomBytes(24).toString('hex');
-        const tokenHash = this.securityService.hashToken(token);
-        const registration = await this.registrationsRepository.createRegistration({
-            userId: dto.userId,
-            tokenHash,
+        const token = (0, crypto_1.randomBytes)(24).toString('hex');
+        const relativePathCandidate = this.normalizeRelativePath(dto.path);
+        const relativePath = relativePathCandidate.length > 0 ? relativePathCandidate : token;
+        const routePath = this.buildRoutePath(relativePath);
+        const registration = await this.webhookService.registerWebhook({
+            workspaceId: dto.workspaceId,
+            workflowId: dto.workflowId,
+            token,
+            path: routePath,
+            method: dto.method ?? 'POST',
+            respondMode: dto.respondMode ?? 'via_node',
+            createdBy: dto.userId ?? null,
+            description: dto.description ?? null,
         });
-        const webhookUrl = `${this.baseUrl}${this.receivingBasePath}/${token}`;
+        const webhookUrl = `${this.baseUrl}${routePath}`;
         this.logger.info({
             registrationId: registration.id,
-            userId: dto.userId,
+            workspaceId: dto.workspaceId,
+            workflowId: dto.workflowId,
             token: this.securityService.maskToken(token),
         }, 'Webhook token generated');
         return {
@@ -110,10 +83,13 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
             message: 'Webhook URL generated successfully.',
             token,
             webhookUrl,
+            registrationId: registration.id,
         };
     }
     async verifyWebhook(token, query, headers) {
         const registration = await this.requireRegistration(token);
+        const snapshotHeaders = this.headerSnapshot(headers);
+        const normalizedQuery = this.normalizeQuery(query);
         const mode = typeof query['hub.mode'] === 'string' ? query['hub.mode'] : undefined;
         const verifyTokenQuery = typeof query['hub.verify_token'] === 'string'
             ? query['hub.verify_token']
@@ -128,13 +104,17 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
             });
         }
         if (mode === 'subscribe' && verifyTokenQuery === this.verifyToken) {
-            await this.registrationsRepository.markVerified(registration.id);
-            await this.eventsRepository.recordEvent({
-                registrationId: registration.id,
-                eventType: 'meta_verification',
-                payload: { query },
-                headers: this.headerSnapshot(headers),
-                signatureValid: true,
+            await this.webhookService.recordEvent({
+                workspaceId: registration.workspaceId,
+                webhookId: registration.id,
+                correlationId: (0, crypto_1.randomUUID)(),
+                method: 'GET',
+                headers: snapshotHeaders,
+                query: normalizedQuery,
+                body: { mode, query: normalizedQuery },
+                rawBody: null,
+                signature: null,
+                idempotencyKey: null,
                 status: 'processed',
             });
             this.logger.info({
@@ -143,14 +123,18 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
             }, 'Webhook verification accepted');
             return challenge ?? 'verified';
         }
-        await this.eventsRepository.recordEvent({
-            registrationId: registration.id,
-            eventType: 'meta_verification',
-            payload: { query },
-            headers: this.headerSnapshot(headers),
-            signatureValid: false,
-            status: 'rejected',
-            errorMessage: 'verify_token_mismatch',
+        await this.webhookService.recordEvent({
+            workspaceId: registration.workspaceId,
+            webhookId: registration.id,
+            correlationId: (0, crypto_1.randomUUID)(),
+            method: 'GET',
+            headers: snapshotHeaders,
+            query: normalizedQuery,
+            body: { mode, query: normalizedQuery },
+            rawBody: null,
+            signature: null,
+            idempotencyKey: null,
+            status: 'failed',
         });
         this.logger.warn({
             registrationId: registration.id,
@@ -161,18 +145,25 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
             message: 'verify_token_mismatch',
         });
     }
-    async receiveWebhook(token, body, headers, rawBody) {
+    async receiveWebhook(token, method, query, body, headers, rawBody) {
         const registration = await this.requireRegistration(token);
+        const snapshotHeaders = this.headerSnapshot(headers);
         const signatureCheck = this.verifyMetaSignature(headers, rawBody);
+        const correlationId = (0, crypto_1.randomUUID)();
+        const normalizedQuery = this.normalizeQuery(query);
         if (!signatureCheck.valid) {
-            await this.eventsRepository.recordEvent({
-                registrationId: registration.id,
-                eventType: 'webhook_event',
-                payload: body,
-                headers: this.headerSnapshot(headers),
-                signatureValid: false,
-                status: 'rejected',
-                errorMessage: signatureCheck.reason,
+            await this.webhookService.recordEvent({
+                workspaceId: registration.workspaceId,
+                webhookId: registration.id,
+                correlationId,
+                method,
+                headers: snapshotHeaders,
+                query: normalizedQuery,
+                body,
+                rawBody: rawBody ?? null,
+                signature: signatureCheck.signature ?? null,
+                idempotencyKey: null,
+                status: 'failed',
             });
             this.logger.warn({
                 registrationId: registration.id,
@@ -188,49 +179,50 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
             headers['content-type']) ||
             '';
         if (!contentType.includes('application/json')) {
-            await this.eventsRepository.recordEvent({
-                registrationId: registration.id,
-                eventType: 'webhook_event',
-                payload: null,
-                headers: this.headerSnapshot(headers),
-                signatureValid: true,
-                status: 'rejected',
-                errorMessage: 'unsupported_content_type',
+            await this.webhookService.recordEvent({
+                workspaceId: registration.workspaceId,
+                webhookId: registration.id,
+                correlationId,
+                method,
+                headers: snapshotHeaders,
+                query: normalizedQuery,
+                body: null,
+                rawBody: null,
+                signature: signatureCheck.signature ?? null,
+                idempotencyKey: null,
+                status: 'failed',
             });
             throw new common_1.BadRequestException({
                 status: 'error',
                 message: 'Content-Type must be application/json.',
             });
         }
-        await this.registrationsRepository.updateLastUsedAt(registration.id);
+        const eventId = await this.webhookService.recordEvent({
+            workspaceId: registration.workspaceId,
+            webhookId: registration.id,
+            correlationId,
+            method,
+            headers: snapshotHeaders,
+            query: normalizedQuery,
+            body,
+            rawBody: rawBody ?? null,
+            signature: signatureCheck.signature ?? null,
+            idempotencyKey: null,
+            status: 'received',
+        });
         try {
-            const processing = this.processEvent(registration.user_id, body);
-            const eventRecord = await this.eventsRepository.recordEvent({
-                registrationId: registration.id,
-                eventType: processing.receivedType,
-                payload: body,
-                headers: this.headerSnapshot(headers),
-                signatureValid: true,
-                status: 'processed',
-            });
+            const processing = this.buildProcessingSummary(registration, body);
+            await this.webhookService.updateEventStatus(eventId, 'processed');
             return {
                 status: 'success',
                 message: 'Event received and stored successfully.',
-                eventId: eventRecord.id,
+                eventId,
                 processing,
             };
         }
         catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'processing_failed';
-            await this.eventsRepository.recordEvent({
-                registrationId: registration.id,
-                eventType: this.extractEventType(body),
-                payload: body,
-                headers: this.headerSnapshot(headers),
-                signatureValid: true,
-                status: 'error',
-                errorMessage,
-            });
+            await this.webhookService.updateEventStatus(eventId, 'failed');
             this.logger.error({
                 registrationId: registration.id,
                 error: error instanceof Error
@@ -244,42 +236,56 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
         }
     }
     async requireRegistration(token) {
-        const tokenHash = this.securityService.hashToken(token);
-        const registration = await this.registrationsRepository.findActiveByTokenHash(tokenHash);
-        if (!registration) {
-            this.logger.warn({ token: this.securityService.maskToken(token) }, 'Webhook token not found or inactive');
-            throw new common_1.NotFoundException({
-                status: 'error',
-                message: 'Webhook token not found or inactive.',
-            });
+        try {
+            return await this.webhookService.getRegistrationByToken(token);
         }
-        return registration;
+        catch (error) {
+            if (error instanceof common_1.NotFoundException) {
+                this.logger.warn({ token: this.securityService.maskToken(token) }, 'Webhook token not found or inactive');
+            }
+            throw error instanceof common_1.NotFoundException
+                ? error
+                : new common_1.NotFoundException({
+                    status: 'error',
+                    message: 'Webhook token not found or inactive.',
+                });
+        }
     }
     verifyMetaSignature(headers, rawBody) {
         if (!this.appSecret) {
-            return { valid: true, reason: 'app_secret_not_configured' };
+            return { valid: true, reason: 'app_secret_not_configured', signature: null };
         }
-        const signatureHeader = headers['x-hub-signature-256'] ??
-            headers['X-Hub-Signature-256'];
+        const signatureHeader = this.extractSignatureHeader(headers);
         if (!signatureHeader) {
-            return { valid: false, reason: 'missing_signature' };
+            return { valid: false, reason: 'missing_signature', signature: null };
         }
         const [scheme, providedHash] = signatureHeader.split('=');
         if (scheme !== 'sha256' || !providedHash) {
-            return { valid: false, reason: 'invalid_signature_format' };
+            return {
+                valid: false,
+                reason: 'invalid_signature_format',
+                signature: signatureHeader,
+            };
         }
-        const expected = crypto
-            .createHmac('sha256', this.appSecret)
+        const expected = (0, crypto_1.createHmac)('sha256', this.appSecret)
             .update(rawBody ?? Buffer.alloc(0))
             .digest('hex');
         if (providedHash.length !== expected.length) {
-            return { valid: false, reason: 'length_mismatch' };
+            return {
+                valid: false,
+                reason: 'length_mismatch',
+                signature: signatureHeader,
+            };
         }
         try {
             const providedBuffer = Buffer.from(providedHash, 'hex');
             const expectedBuffer = Buffer.from(expected, 'hex');
-            const valid = crypto.timingSafeEqual(providedBuffer, expectedBuffer);
-            return { valid, reason: valid ? 'matched' : 'mismatch' };
+            const valid = (0, crypto_1.timingSafeEqual)(providedBuffer, expectedBuffer);
+            return {
+                valid,
+                reason: valid ? 'matched' : 'mismatch',
+                signature: signatureHeader,
+            };
         }
         catch (error) {
             this.logger.warn({
@@ -287,15 +293,21 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
                     ? { message: error.message, name: error.name }
                     : { value: String(error) },
             }, 'Failed to compare webhook signature');
-            return { valid: false, reason: 'comparison_failed' };
+            return {
+                valid: false,
+                reason: 'comparison_failed',
+                signature: signatureHeader,
+            };
         }
     }
-    processEvent(userId, eventData) {
+    buildProcessingSummary(registration, eventData) {
         const receivedType = this.extractEventType(eventData);
         return {
-            routeTo: userId,
+            routeTo: registration.workflowId,
+            workspaceId: registration.workspaceId,
             receivedType,
-            instruction: 'Forward payload to the user specific automation workflow.',
+            respondMode: registration.respondMode,
+            instruction: 'Payload stored and ready for workflow execution via orchestrator.',
             payloadSize: Buffer.byteLength(JSON.stringify(eventData ?? {}), 'utf8'),
         };
     }
@@ -319,6 +331,37 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
         }
         return 'unknown';
     }
+    normalizeQuery(query) {
+        const normalized = {};
+        for (const [key, value] of Object.entries(query ?? {})) {
+            if (Array.isArray(value)) {
+                normalized[key] = value;
+            }
+            else if (value !== undefined) {
+                normalized[key] = value;
+            }
+        }
+        return normalized;
+    }
+    extractSignatureHeader(headers) {
+        const lower = Object.entries(headers ?? {}).reduce((acc, [key, value]) => {
+            if (typeof value === 'string') {
+                acc[key.toLowerCase()] = value;
+            }
+            return acc;
+        }, {});
+        return lower['x-hub-signature-256'] ?? null;
+    }
+    normalizeRelativePath(path) {
+        if (!path) {
+            return '';
+        }
+        return path.trim().replace(/^\/+/, '').replace(/\/+$/, '');
+    }
+    buildRoutePath(relative) {
+        const combined = `${this.receivingBasePath}/${relative}`.replace(/\/{2,}/g, '/');
+        return combined.endsWith('/') && combined !== '/' ? combined.slice(0, -1) : combined;
+    }
     headerSnapshot(headers) {
         const snapshot = {};
         for (const [key, value] of Object.entries(headers ?? {})) {
@@ -330,8 +373,7 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
 exports.WebhooksService = WebhooksService;
 exports.WebhooksService = WebhooksService = WebhooksService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [webhook_registrations_repository_1.WebhookRegistrationsRepository,
-        webhook_events_repository_1.WebhookEventsRepository,
+    __metadata("design:paramtypes", [workflow_webhook_service_1.WorkflowWebhookService,
         security_service_1.SecurityService,
         config_1.ConfigService,
         nestjs_pino_1.PinoLogger])

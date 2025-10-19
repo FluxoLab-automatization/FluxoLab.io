@@ -32,6 +32,11 @@ let WorkflowRunnerService = WorkflowRunnerService_1 = class WorkflowRunnerServic
     }
     async onModuleInit() {
         const queue = this.queueService.getQueue();
+        const connection = this.queueService.getConnection();
+        if (!queue || !connection) {
+            this.logger.log('Workflow runner disabled (queue not available)');
+            return;
+        }
         this.worker = new bullmq_1.Worker(queue.name, async (job) => {
             const { executionId, workspaceId } = job.data;
             const execution = await this.executionsService.getExecution(executionId);
@@ -61,10 +66,10 @@ let WorkflowRunnerService = WorkflowRunnerService_1 = class WorkflowRunnerServic
                 await this.webhookService.updateEventStatus(execution.triggerEventId, 'processed');
             }
         }, {
-            connection: this.queueService.getConnection(),
+            connection,
         });
         this.worker.on('failed', (job, err) => {
-            this.logger.error(`Workflow job ${job?.id} failed`, err.stack);
+            this.logger.error(`Workflow job ${job?.id ?? 'unknown'} failed`, err instanceof Error ? err.stack : err);
         });
     }
     async onModuleDestroy() {

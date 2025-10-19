@@ -1,14 +1,15 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
+  NotFoundException,
+  Param,
   Post,
   Put,
-  Delete,
-  Body,
-  Param,
   Query,
-  UseGuards,
   UnprocessableEntityException,
+  UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -19,6 +20,8 @@ import {
 } from './workspace-settings.service';
 import { UsageAnalyticsService } from './services/usage-analytics.service';
 import { PlanManagementService } from './services/plan-management.service';
+import { WorkspaceApiKeysService } from './services/workspace-api-keys.service';
+import { WorkspaceIntegrationsService } from './services/workspace-integrations.service';
 import { UsageHistoryQueryDto } from './dto/usage-history.dto';
 import { UpgradePlanDto, CancelSubscriptionDto } from './dto/plan-management.dto';
 
@@ -28,6 +31,8 @@ export class SettingsController {
     private readonly workspaceSettingsService: WorkspaceSettingsService,
     private readonly usageAnalyticsService: UsageAnalyticsService,
     private readonly planManagementService: PlanManagementService,
+    private readonly apiKeysService: WorkspaceApiKeysService,
+    private readonly integrationsService: WorkspaceIntegrationsService,
   ) {}
 
   /** Garante workspaceId como string e lança 422 se ausente */
@@ -159,6 +164,130 @@ export class SettingsController {
     };
   }
 
+  // Integration Endpoints
+  @UseGuards(JwtAuthGuard)
+  @Get('integrations/status')
+  async getIntegrationsStatus(@CurrentUser() user: AuthenticatedUser) {
+    const workspaceId = this.requireWorkspaceId(user);
+    const integrations = await this.integrationsService.getStatus(workspaceId);
+    return {
+      status: 'ok',
+      integrations,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('environments/:environmentId/status')
+  async setEnvironmentStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('environmentId') environmentId: string,
+    @Body() payload: { status: 'active' | 'inactive' },
+  ) {
+    const workspaceId = this.requireWorkspaceId(user);
+    const updated = await this.integrationsService.updateEnvironmentStatus({
+      workspaceId,
+      environmentId,
+      status: payload.status,
+    });
+
+    if (!updated) {
+      throw new NotFoundException('Ambiente nao encontrado para este workspace.');
+    }
+
+    return {
+      status: 'ok',
+      environment: updated,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('sso/configure')
+  async configureSso(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body()
+    body: {
+      provider: string;
+      clientId: string;
+      clientSecret: string;
+      enabled: boolean;
+    },
+  ) {
+    const workspaceId = this.requireWorkspaceId(user);
+    await this.integrationsService.configureSso({
+      workspaceId,
+      provider: body.provider,
+      clientId: body.clientId,
+      clientSecret: body.clientSecret,
+      enabled: body.enabled,
+      recordedBy: user.id,
+    });
+
+    return {
+      status: 'ok',
+      message: 'SSO configuration updated successfully',
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('ldap/configure')
+  async configureLdap(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body()
+    body: {
+      host: string;
+      port: number;
+      baseDn: string;
+      bindDn: string;
+      bindPassword: string;
+      enabled: boolean;
+    },
+  ) {
+    const workspaceId = this.requireWorkspaceId(user);
+    await this.integrationsService.configureLdap({
+      workspaceId,
+      host: body.host,
+      baseDn: body.baseDn,
+      port: body.port,
+      bindDn: body.bindDn,
+      bindPassword: body.bindPassword,
+      enabled: body.enabled,
+      recordedBy: user.id,
+    });
+
+    return {
+      status: 'ok',
+      message: 'LDAP configuration updated successfully',
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logs/configure')
+  async configureLogDestination(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body()
+    body: {
+      destination: string;
+      endpoint: string;
+      apiKey?: string;
+      enabled: boolean;
+    },
+  ) {
+    const workspaceId = this.requireWorkspaceId(user);
+    await this.integrationsService.configureLogDestination({
+      workspaceId,
+      destination: body.destination,
+      endpoint: body.endpoint,
+      apiKey: body.apiKey,
+      enabled: body.enabled,
+      recordedBy: user.id,
+    });
+
+    return {
+      status: 'ok',
+      message: 'Log destination updated successfully',
+    };
+  }
+
   // Personal Settings Endpoints
   @UseGuards(JwtAuthGuard)
   @Put('personal/profile')
@@ -193,10 +322,19 @@ export class SettingsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() keyData: any,
   ) {
-    // const workspaceId = this.requireWorkspaceId(user);
+    const workspaceId = this.requireWorkspaceId(user);
+    const { token, key } = await this.apiKeysService.createKey({
+      workspaceId,
+      label: keyData.label ?? 'Chave API',
+      scopes: Array.isArray(keyData.scopes) ? keyData.scopes : [],
+      createdBy: user.id,
+      expiresAt: keyData.expiresAt ? new Date(keyData.expiresAt) : null,
+      metadata: keyData.metadata ?? {},
+    });
     return {
       status: 'ok',
-      message: 'API key created successfully',
+      token,
+      key,
     };
   }
 
@@ -206,7 +344,12 @@ export class SettingsController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') keyId: string,
   ) {
-    // const workspaceId = this.requireWorkspaceId(user);
+    const workspaceId = this.requireWorkspaceId(user);
+    await this.apiKeysService.revokeKey({
+      workspaceId,
+      apiKeyId: keyId,
+      actorId: user.id,
+    });
     return {
       status: 'ok',
       message: 'API key revoked successfully',
@@ -219,10 +362,11 @@ export class SettingsController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') keyId: string,
   ) {
-    // const workspaceId = this.requireWorkspaceId(user);
+    const workspaceId = this.requireWorkspaceId(user);
+    const usage = await this.apiKeysService.getKeyUsage(workspaceId, keyId);
     return {
       status: 'ok',
-      usage: [],
+      usage,
     };
   }
 
@@ -232,10 +376,15 @@ export class SettingsController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') keyId: string,
   ) {
-    // const workspaceId = this.requireWorkspaceId(user);
+    const workspaceId = this.requireWorkspaceId(user);
+    const { token } = await this.apiKeysService.rotateKey({
+      workspaceId,
+      apiKeyId: keyId,
+      actorId: user.id,
+    });
     return {
       status: 'ok',
-      message: 'API key rotated successfully',
+      token,
     };
   }
 }

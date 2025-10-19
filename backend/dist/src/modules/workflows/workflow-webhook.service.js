@@ -29,9 +29,10 @@ let WorkflowWebhookService = class WorkflowWebhookService {
           path,
           method,
           respond_mode,
+          description,
           created_by
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING id,
                   workspace_id,
                   workflow_id,
@@ -39,6 +40,7 @@ let WorkflowWebhookService = class WorkflowWebhookService {
                   path,
                   method,
                   respond_mode,
+                  description,
                   enabled,
                   created_at
       `, [
@@ -48,6 +50,7 @@ let WorkflowWebhookService = class WorkflowWebhookService {
             params.path,
             params.method ?? 'POST',
             params.respondMode ?? 'via_node',
+            params.description ?? null,
             params.createdBy ?? null,
         ]);
         return this.mapRegistration(result.rows[0]);
@@ -61,6 +64,7 @@ let WorkflowWebhookService = class WorkflowWebhookService {
                path,
                method,
                respond_mode,
+               description,
                enabled,
                created_at
           FROM webhook_registrations
@@ -156,6 +160,7 @@ let WorkflowWebhookService = class WorkflowWebhookService {
             path: row.path,
             method: row.method,
             respondMode: row.respond_mode,
+            description: row.description,
             enabled: row.enabled,
             createdAt: row.created_at,
         };

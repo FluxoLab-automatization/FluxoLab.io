@@ -61,7 +61,7 @@ let WebhooksController = class WebhooksController {
             }
         }
         catch (error) {
-            const response = await this.webhooksService.receiveWebhook(token, body, headers, req.rawBody);
+            const response = await this.webhooksService.receiveWebhook(token, req.method, req.query, body, headers, req.rawBody);
             if (!res.headersSent) {
                 res.status(200).json(response);
             }

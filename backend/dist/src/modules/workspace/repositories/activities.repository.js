@@ -20,21 +20,25 @@ let ActivitiesRepository = class ActivitiesRepository {
     get pool() {
         return this.database.getPool();
     }
-    async listRecentByUser(userId, limit) {
+    async listRecentByUser(workspaceId, userId, limit) {
         const result = await this.pool.query(`
         SELECT id,
+               workspace_id,
                user_id,
                entity_type,
                entity_id,
                action,
-               payload,
+               metadata,
                created_at
         FROM activities
-        WHERE user_id = $1
-           OR (user_id IS NULL AND entity_type = 'system')
+        WHERE workspace_id = $1
+          AND (
+            user_id = $2
+            OR user_id IS NULL
+          )
         ORDER BY created_at DESC
-        LIMIT $2
-      `, [userId, limit]);
+        LIMIT $3
+      `, [workspaceId, userId, limit]);
         return result.rows;
     }
 };

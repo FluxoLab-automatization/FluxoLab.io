@@ -12,13 +12,49 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GenerateWebhookDto = void 0;
 const class_validator_1 = require("class-validator");
 class GenerateWebhookDto {
+    workspaceId;
+    workflowId;
     userId;
+    path;
+    method;
+    respondMode;
+    description;
 }
 exports.GenerateWebhookDto = GenerateWebhookDto;
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(1),
-    (0, class_validator_1.MaxLength)(190),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], GenerateWebhookDto.prototype, "workspaceId", void 0);
+__decorate([
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], GenerateWebhookDto.prototype, "workflowId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], GenerateWebhookDto.prototype, "userId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(1),
+    (0, class_validator_1.MaxLength)(120),
+    __metadata("design:type", String)
+], GenerateWebhookDto.prototype, "path", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['GET', 'POST']),
+    __metadata("design:type", String)
+], GenerateWebhookDto.prototype, "method", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['immediate', 'on_last_node', 'via_node']),
+    __metadata("design:type", String)
+], GenerateWebhookDto.prototype, "respondMode", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(240),
+    __metadata("design:type", String)
+], GenerateWebhookDto.prototype, "description", void 0);
 //# sourceMappingURL=generate-webhook.dto.js.map

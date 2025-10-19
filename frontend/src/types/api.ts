@@ -41,6 +41,7 @@ export interface Project {
 
 export interface Activity {
   id: string;
+  workspaceId?: string;
   entityType: string;
   entityId: string | null;
   action: string;
@@ -114,6 +115,9 @@ export interface WorkspaceApiKey {
   status: string;
   createdAt: string;
   lastUsedAt: string | null;
+  expiresAt?: string | null;
+  revokedAt?: string | null;
+  metadata?: Record<string, unknown>;
   createdBy: { id: string; email: string | null } | null;
 }
 
@@ -176,6 +180,25 @@ export interface SettingsSummary {
 export interface SettingsSummaryResponse {
   status: 'ok';
   summary: SettingsSummary;
+}
+
+export interface UsageAlert {
+  id: string;
+  metric: string;
+  threshold: number;
+  condition: 'greater_than' | 'less_than' | 'equals';
+  window: string;
+  channel: string;
+  enabled: boolean;
+  metadata: Record<string, unknown>;
+  lastTriggeredAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UsageAlertsResponse {
+  status: 'ok';
+  alerts: UsageAlert[];
 }
 
 export interface WorkspaceOverviewResponse {

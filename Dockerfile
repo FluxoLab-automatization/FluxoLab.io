@@ -12,7 +12,10 @@ COPY backend/package*.json ./backend/
 COPY frontend/package*.json ./frontend/
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --only=production \
+  && cd backend && npm ci --only=production \
+  && cd .. \
+  && npm cache clean --force
 
 # Development dependencies
 FROM base AS dev-deps
@@ -32,7 +35,7 @@ RUN npm run build
 
 # Build backend
 FROM base AS backend-builder
-WORKDIR /app
+WORKDIR /app/backend
 COPY backend/package*.json ./
 RUN npm ci
 COPY backend/ ./
@@ -54,7 +57,7 @@ COPY --from=deps --chown=fluxolab:nodejs /app/backend/node_modules ./backend/nod
 COPY --from=frontend-builder --chown=fluxolab:nodejs /app/dist ./frontend/dist
 COPY --from=backend-builder --chown=fluxolab:nodejs /app/backend/dist ./backend/dist
 
-# Copy configuration files
+# Copy configuration files that runtime still needs
 COPY --chown=fluxolab:nodejs package*.json ./
 COPY --chown=fluxolab:nodejs backend/package*.json ./backend/
 COPY --chown=fluxolab:nodejs backend/nest-cli.json ./backend/
@@ -64,13 +67,6 @@ COPY --chown=fluxolab:nodejs frontend/tsconfig*.json ./frontend/
 COPY --chown=fluxolab:nodejs frontend/vite.config.ts ./frontend/
 COPY --chown=fluxolab:nodejs frontend/tailwind.config.js ./frontend/
 COPY --chown=fluxolab:nodejs frontend/postcss.config.js ./frontend/
-
-# Copy source files for development
-COPY --chown=fluxolab:nodejs . .
-
-# Install production dependencies
-RUN npm ci --only=production && npm cache clean --force
-RUN cd backend && npm ci --only=production && npm cache clean --force
 
 # Create necessary directories
 RUN mkdir -p /app/logs /app/uploads /app/temp
@@ -86,5 +82,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Switch to non-root user
 USER fluxolab
 
-# Start the application
-CMD ["npm", "run", "start:prod"]
+# Start the application (backend NestJS)
+CMD ["npm", "run", "start:prod", "--prefix", "backend"]

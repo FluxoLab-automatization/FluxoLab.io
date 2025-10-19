@@ -43,4 +43,26 @@ export declare class WorkspaceIntegrationsRepository {
     listSsoConfigs(workspaceId: string): Promise<SsoConfigRecord[]>;
     getLdapConfig(workspaceId: string): Promise<LdapConfigRecord | null>;
     listCommunityConnectors(workspaceId: string): Promise<CommunityConnectorRecord[]>;
+    upsertSsoConfig(params: {
+        workspaceId: string;
+        provider: string;
+        status: string;
+        settings?: Record<string, unknown>;
+        metadata?: Record<string, unknown>;
+    }): Promise<void>;
+    upsertLdapConfig(params: {
+        workspaceId: string;
+        status: string;
+        host?: string | null;
+        baseDn?: string | null;
+        settings?: Record<string, unknown>;
+        metadata?: Record<string, unknown>;
+    }): Promise<void>;
+    upsertLogDestination(params: {
+        workspaceId: string;
+        destination: string;
+        status: string;
+        config?: Record<string, unknown>;
+        metadata?: Record<string, unknown>;
+    }): Promise<void>;
 }

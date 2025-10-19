@@ -13,11 +13,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsageAnalyticsService = void 0;
 const common_1 = require("@nestjs/common");
 const database_service_1 = require("../../../shared/database/database.service");
+const workspace_usage_alerts_repository_1 = require("../repositories/workspace-usage-alerts.repository");
 let UsageAnalyticsService = UsageAnalyticsService_1 = class UsageAnalyticsService {
     database;
+    usageAlerts;
     logger = new common_1.Logger(UsageAnalyticsService_1.name);
-    constructor(database) {
+    constructor(database, usageAlerts) {
         this.database = database;
+        this.usageAlerts = usageAlerts;
     }
     async getUsageHistory(workspaceId, query) {
         const { period, startDate, endDate, metric } = query;
@@ -154,16 +157,48 @@ let UsageAnalyticsService = UsageAnalyticsService_1 = class UsageAnalyticsServic
     calculateGrowthRate(_currentData, _previousPeriod) {
         return 0;
     }
-    async getUsageAlerts(_workspaceId) {
-        return [];
+    async getUsageAlerts(workspaceId) {
+        const records = await this.usageAlerts.listByWorkspace(workspaceId);
+        return records.map((record) => this.mapAlert(record));
     }
-    async createUsageAlert(_workspaceId, _alertConfig) {
-        return {};
+    async createUsageAlert(workspaceId, alertConfig) {
+        const record = await this.usageAlerts.createAlert({
+            workspaceId,
+            metric: alertConfig.metric ?? 'webhooks',
+            threshold: Number(alertConfig.threshold ?? 0),
+            condition: alertConfig.condition ?? 'greater_than',
+            window: alertConfig.window ?? '24h',
+            channel: alertConfig.channel ?? 'email',
+            createdBy: alertConfig.createdBy ?? null,
+            metadata: alertConfig.metadata ?? {},
+        });
+        let finalRecord = record;
+        if (alertConfig.enabled === false) {
+            await this.usageAlerts.setEnabled(record.id, false);
+            finalRecord = { ...record, enabled: false };
+        }
+        return this.mapAlert(finalRecord);
+    }
+    mapAlert(record) {
+        return {
+            id: record.id,
+            metric: record.metric,
+            threshold: Number(record.threshold),
+            condition: record.condition,
+            window: record.window,
+            channel: record.channel,
+            enabled: record.enabled,
+            metadata: record.metadata ?? {},
+            lastTriggeredAt: record.last_triggered_at,
+            createdAt: record.created_at,
+            updatedAt: record.updated_at,
+        };
     }
 };
 exports.UsageAnalyticsService = UsageAnalyticsService;
 exports.UsageAnalyticsService = UsageAnalyticsService = UsageAnalyticsService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [database_service_1.DatabaseService])
+    __metadata("design:paramtypes", [database_service_1.DatabaseService,
+        workspace_usage_alerts_repository_1.WorkspaceUsageAlertsRepository])
 ], UsageAnalyticsService);
 //# sourceMappingURL=usage-analytics.service.js.map
