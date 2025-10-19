@@ -60,7 +60,7 @@ export function buildOAuthUrl(
   provider: OAuthProvider,
   redirectPath?: string,
 ): string {
-  const target = new URL(`${apiBaseUrl}/auth/oauth/${provider}`);
+  const target = new URL(`${apiBaseUrl}/auth/oauth/${provider}`, window.location.origin);
 
   if (redirectPath) {
     target.searchParams.set('redirect', redirectPath);

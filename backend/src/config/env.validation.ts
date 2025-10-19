@@ -1,12 +1,16 @@
 import { z } from 'zod';
 
+const optionalUrl = z
+  .union([z.string().url(), z.literal(''), z.undefined()])
+  .transform((value) => (value ? value : undefined));
+
 export const envSchema = z
   .object({
     NODE_ENV: z
       .enum(['development', 'test', 'production'])
       .default('development'),
     PORT: z.coerce.number().int().positive().max(65535).default(3000),
-    BASE_URL: z.string().url().optional(),
+    BASE_URL: optionalUrl,
     RECEIVING_BASE_PATH: z.string().trim().default('/webhooks'),
     DATABASE_URL: z.string().url(),
     PG_POOL_MAX: z.coerce.number().int().positive().default(10),
@@ -27,11 +31,11 @@ export const envSchema = z
     BCRYPT_SALT_ROUNDS: z.coerce.number().int().positive().default(10),
     
     // New configurations for improved features
-    REDIS_URL: z.string().url().optional(),
+    REDIS_URL: optionalUrl,
     REDIS_PASSWORD: z.string().optional(),
     
     // Monitoring and observability
-    SENTRY_DSN: z.string().url().optional(),
+    SENTRY_DSN: optionalUrl,
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     
     // Email configuration
@@ -52,7 +56,7 @@ export const envSchema = z
     ENABLE_METRICS: z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
     
     // MCP Configuration
-    MCP_SERVER_URL: z.string().url().optional(),
+    MCP_SERVER_URL: optionalUrl,
     MCP_API_KEY: z.string().optional(),
   })
   .passthrough();
