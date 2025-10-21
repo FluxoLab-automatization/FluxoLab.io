@@ -32,6 +32,9 @@ export const envSchema = z
     
     // New configurations for improved features
     REDIS_URL: optionalUrl,
+    REDIS_HOST: z.string().trim().min(1).default('127.0.0.1'),
+    REDIS_PORT: z.coerce.number().int().positive().default(6379),
+    REDIS_USERNAME: z.string().optional(),
     REDIS_PASSWORD: z.string().optional(),
     
     // Monitoring and observability

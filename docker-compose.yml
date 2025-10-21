@@ -76,7 +76,7 @@ services:
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
     ports:
-      - "3001:3000"
+      - "3005:3000"
     volumes:
       - ./logs:/app/logs
       - ./uploads:/app/uploads

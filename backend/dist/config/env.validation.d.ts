@@ -26,6 +26,9 @@ export declare const envSchema: z.ZodObject<{
     CORS_ORIGINS: z.ZodOptional<z.ZodString>;
     BCRYPT_SALT_ROUNDS: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     REDIS_URL: z.ZodPipe<z.ZodUnion<readonly [z.ZodString, z.ZodLiteral<"">, z.ZodUndefined]>, z.ZodTransform<string | undefined, string | undefined>>;
+    REDIS_HOST: z.ZodDefault<z.ZodString>;
+    REDIS_PORT: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+    REDIS_USERNAME: z.ZodOptional<z.ZodString>;
     REDIS_PASSWORD: z.ZodOptional<z.ZodString>;
     SENTRY_DSN: z.ZodPipe<z.ZodUnion<readonly [z.ZodString, z.ZodLiteral<"">, z.ZodUndefined]>, z.ZodTransform<string | undefined, string | undefined>>;
     LOG_LEVEL: z.ZodDefault<z.ZodEnum<{

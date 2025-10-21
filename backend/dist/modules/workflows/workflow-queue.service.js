@@ -25,16 +25,43 @@ let WorkflowQueueService = WorkflowQueueService_1 = class WorkflowQueueService {
     deliverEvents;
     enabled;
     constructor(config) {
-        const redisUrl = config.get('REDIS_URL', { infer: true }) ?? 'redis://localhost:6379';
+        const redisUrl = config.get('REDIS_URL', { infer: true });
+        const fallbackHost = config.get('REDIS_HOST', { infer: true });
+        const fallbackPort = config.get('REDIS_PORT', { infer: true });
+        const username = config.get('REDIS_USERNAME', { infer: true }) || undefined;
+        const password = config.get('REDIS_PASSWORD', { infer: true }) || undefined;
         const isTest = process.env.NODE_ENV === 'test';
-        this.enabled = !isTest && Boolean(redisUrl);
+        this.enabled = !isTest;
         if (!this.enabled) {
             this.connection = null;
             this.deliverQueue = null;
             this.deliverEvents = null;
             return;
         }
-        this.connection = new ioredis_1.default(redisUrl, {
+        const resolveRedisOptions = () => {
+            if (redisUrl) {
+                const parsed = new URL(redisUrl);
+                const options = {
+                    host: parsed.hostname || fallbackHost,
+                    port: parsed.port ? Number(parsed.port) : fallbackPort,
+                    password: parsed.password || password,
+                    username: parsed.username || username,
+                };
+                if (parsed.protocol === 'rediss:') {
+                    options.tls = {};
+                }
+                return options;
+            }
+            return {
+                host: fallbackHost,
+                port: fallbackPort,
+                username,
+                password,
+            };
+        };
+        const redisOptions = resolveRedisOptions();
+        this.connection = new ioredis_1.default({
+            ...redisOptions,
             maxRetriesPerRequest: null,
         });
         this.deliverQueue = new bullmq_1.Queue('workflow-deliver', {

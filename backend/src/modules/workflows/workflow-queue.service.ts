@@ -1,8 +1,14 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JobsOptions, Queue, QueueEvents } from 'bullmq';
 import { AppConfig } from '../../config/env.validation';
 import IORedis from 'ioredis';
+import type { RedisOptions } from 'ioredis';
 
 export interface DeliverPayload {
   executionId: string;
@@ -18,10 +24,15 @@ export class WorkflowQueueService implements OnModuleInit, OnModuleDestroy {
   private readonly enabled: boolean;
 
   constructor(config: ConfigService<AppConfig, true>) {
-    const redisUrl =
-      config.get('REDIS_URL', { infer: true }) ?? 'redis://localhost:6379';
+    const redisUrl = config.get('REDIS_URL', { infer: true });
+    const fallbackHost = config.get('REDIS_HOST', { infer: true });
+    const fallbackPort = config.get('REDIS_PORT', { infer: true });
+    const username =
+      config.get('REDIS_USERNAME', { infer: true }) || undefined;
+    const password =
+      config.get('REDIS_PASSWORD', { infer: true }) || undefined;
     const isTest = process.env.NODE_ENV === 'test';
-    this.enabled = !isTest && Boolean(redisUrl);
+    this.enabled = !isTest;
 
     if (!this.enabled) {
       this.connection = null;
@@ -30,7 +41,35 @@ export class WorkflowQueueService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    this.connection = new IORedis(redisUrl, {
+    const resolveRedisOptions = (): RedisOptions => {
+      if (redisUrl) {
+        const parsed = new URL(redisUrl);
+        const options: RedisOptions = {
+          host: parsed.hostname || fallbackHost,
+          port: parsed.port ? Number(parsed.port) : fallbackPort,
+          password: parsed.password || password,
+          username: parsed.username || username,
+        };
+
+        if (parsed.protocol === 'rediss:') {
+          options.tls = {};
+        }
+
+        return options;
+      }
+
+      return {
+        host: fallbackHost,
+        port: fallbackPort,
+        username,
+        password,
+      };
+    };
+
+    const redisOptions = resolveRedisOptions();
+
+    this.connection = new IORedis({
+      ...redisOptions,
       maxRetriesPerRequest: null,
     });
 

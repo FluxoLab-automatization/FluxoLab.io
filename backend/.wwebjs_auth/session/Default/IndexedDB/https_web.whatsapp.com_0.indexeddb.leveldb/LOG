@@ -1,0 +1,28 @@
+2025/10/19-16:02:03.623 48f8 Reusing MANIFEST K:\fluxoLab_automatiza-o\backend\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/10/19-16:02:03.624 48f8 Recovering log #77
+2025/10/19-16:02:03.746 48f8 Reusing old log K:\fluxoLab_automatiza-o\backend\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000077.log 
+2025/10/19-16:02:11.166 48f8 Level-0 table #83: started
+2025/10/19-16:02:11.189 48f8 Level-0 table #83: 357305 bytes OK
+2025/10/19-16:02:11.192 48f8 Delete type=0 #77
+2025/10/19-16:02:11.195 48f8 Manual compaction at level-0 from '\x00\x19\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x1a\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/10/19-16:02:11.439 3c78 Compacting 1@1 + 2@2 files
+2025/10/19-16:02:11.784 3c78 Generated table #84@1: 65972 keys, 2224009 bytes
+2025/10/19-16:02:12.135 3c78 Generated table #85@1: 36262 keys, 2164590 bytes
+2025/10/19-16:02:12.135 3c78 Compacted 1@1 + 2@2 files => 4388599 bytes
+2025/10/19-16:02:12.137 3c78 compacted to: files[ 0 0 2 0 0 0 0 ]
+2025/10/19-16:07:14.705 385c Level-0 table #87: started
+2025/10/19-16:07:14.718 385c Level-0 table #87: 333247 bytes OK
+2025/10/19-16:07:14.721 385c Delete type=2 #79
+2025/10/19-16:07:14.721 385c Delete type=2 #80
+2025/10/19-16:07:14.721 385c Delete type=0 #82
+2025/10/19-16:07:14.721 385c Delete type=2 #83
+2025/10/19-16:07:14.724 385c Manual compaction at level-0 from '\x00\x1a\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x1b\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/10/19-16:07:19.980 5b64 Compacting 1@1 + 2@2 files
+2025/10/19-16:07:20.248 5b64 Generated table #88@1: 67202 keys, 2225477 bytes
+2025/10/19-16:07:20.358 5b64 Generated table #89@1: 35293 keys, 2199663 bytes
+2025/10/19-16:07:20.365 5b64 Generated table #90@1: 1055 keys, 21457 bytes
+2025/10/19-16:07:20.365 5b64 Compacted 1@1 + 2@2 files => 4446597 bytes
+2025/10/19-16:07:20.367 5b64 compacted to: files[ 0 0 3 0 0 0 0 ]
+2025/10/19-16:07:20.367 5b64 Delete type=2 #84
+2025/10/19-16:07:20.367 5b64 Delete type=2 #85
+2025/10/19-16:07:20.367 5b64 Delete type=2 #87

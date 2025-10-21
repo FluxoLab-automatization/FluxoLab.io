@@ -4,7 +4,7 @@ import { AppConfig } from '../../config/env.validation';
 import { JwtPayload } from '../../shared/auth/token.service';
 import { UsersRepository } from './users.repository';
 import { AuthenticatedUser } from './auth.types';
-declare const JwtStrategy_base: new (...args: [opt: import("passport-jwt").StrategyOptionsWithoutRequest] | [opt: import("passport-jwt").StrategyOptionsWithRequest]) => Strategy & {
+declare const JwtStrategy_base: new (...args: [opt: import("passport-jwt").StrategyOptionsWithRequest] | [opt: import("passport-jwt").StrategyOptionsWithoutRequest]) => Strategy & {
     validate(...args: any[]): unknown;
 };
 export declare class JwtStrategy extends JwtStrategy_base {
