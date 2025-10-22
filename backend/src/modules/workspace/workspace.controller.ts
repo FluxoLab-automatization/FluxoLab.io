@@ -1,8 +1,10 @@
 import {
+  Body,
   Controller,
   DefaultValuePipe,
   Get,
   ParseIntPipe,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -11,6 +13,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequireWorkspaceGuard } from '../auth/require-workspace.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
+import { CreateProjectDto } from './dto/create-project.dto';
 
 @Controller('api/workspace')
 export class WorkspaceController {
@@ -49,6 +52,19 @@ export class WorkspaceController {
     return {
       status: 'ok',
       activities,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard, RequireWorkspaceGuard)
+  @Post('projects')
+  async createProject(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() payload: CreateProjectDto,
+  ) {
+    const project = await this.workspaceService.createProject(user, payload);
+    return {
+      status: 'created',
+      project,
     };
   }
 

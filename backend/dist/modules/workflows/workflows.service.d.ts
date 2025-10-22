@@ -37,7 +37,17 @@ export declare class WorkflowsService {
     activateVersion(workspaceId: string, workflowId: string, versionId: string): Promise<void>;
     getWorkflow(workspaceId: string, workflowId: string): Promise<WorkflowEntity>;
     getActiveVersion(workspaceId: string, workflowId: string): Promise<WorkflowVersionEntity>;
+    getWorkflowPreview(workspaceId: string, workflowId: string): Promise<WorkflowDefinition>;
     private getNextVersion;
     private mapWorkflow;
+    listWorkflows(workspaceId: string, options: {
+        limit: number;
+        offset: number;
+    }): Promise<WorkflowEntity[]>;
+    updateWorkflow(workspaceId: string, workflowId: string, updates: {
+        name?: string;
+        tags?: string[];
+    }): Promise<WorkflowEntity>;
+    deleteWorkflow(workspaceId: string, workflowId: string): Promise<void>;
     private mapVersion;
 }

@@ -12,6 +12,20 @@ import {
 
 type DateRange = { start: Date; end: Date };
 
+type UsageAlertMetric = 'webhooks' | 'users' | 'workflows';
+type UsageAlertCondition = 'greater_than' | 'less_than' | 'equals';
+
+interface CreateUsageAlertInput {
+  metric: UsageAlertMetric;
+  threshold: number;
+  condition: UsageAlertCondition;
+  window?: string;
+  channel?: string;
+  enabled?: boolean;
+  metadata?: Record<string, unknown>;
+  createdBy: string | null;
+}
+
 @Injectable()
 export class UsageAnalyticsService {
   private readonly logger = new Logger(UsageAnalyticsService.name);
@@ -78,7 +92,15 @@ export class UsageAnalyticsService {
       };
     });
 
-    return this.buildUsageResponse('webhooks', data, dateRange);
+    const previousRange = this.getPreviousPeriod(dateRange);
+    const previousResult = await pool.query(query, [
+      workspaceId,
+      previousRange.start,
+      previousRange.end,
+    ]);
+    const previousTotal = previousResult.rows.reduce((sum, row) => sum + Number(row.value), 0);
+
+    return this.buildUsageResponse('webhooks', data, dateRange, previousTotal);
   }
 
   private async getUserUsageHistory(
@@ -111,7 +133,15 @@ export class UsageAnalyticsService {
       };
     });
 
-    return this.buildUsageResponse('users', data, dateRange);
+    const previousRange = this.getPreviousPeriod(dateRange);
+    const previousResult = await pool.query(query, [
+      workspaceId,
+      previousRange.start,
+      previousRange.end,
+    ]);
+    const previousTotal = previousResult.rows.reduce((sum, row) => sum + Number(row.value), 0);
+
+    return this.buildUsageResponse('users', data, dateRange, previousTotal);
   }
 
   private async getWorkflowUsageHistory(
@@ -145,21 +175,28 @@ export class UsageAnalyticsService {
       };
     });
 
-    return this.buildUsageResponse('workflows', data, dateRange);
+    const previousRange = this.getPreviousPeriod(dateRange);
+    const previousResult = await pool.query(query, [
+      workspaceId,
+      previousRange.start,
+      previousRange.end,
+    ]);
+    const previousTotal = previousResult.rows.reduce((sum, row) => sum + Number(row.value), 0);
+
+    return this.buildUsageResponse('workflows', data, dateRange, previousTotal);
   }
 
   private buildUsageResponse(
     metric: string,
     data: UsageDataPoint[],
     dateRange: DateRange,
+    previousTotal: number,
   ): UsageHistoryResponse {
     const total = data.reduce((sum, point) => sum + point.value, 0);
     const average = data.length > 0 ? total / data.length : 0;
     const peak = Math.max(...data.map((point) => point.value), 0);
 
-    // Crescimento comparado ao período anterior (placeholder)
-    const previousPeriod = this.getPreviousPeriod(dateRange);
-    const growth = this.calculateGrowthRate(data, previousPeriod);
+    const growth = this.calculateGrowthRate(total, previousTotal);
 
     return {
       metric,
@@ -210,16 +247,16 @@ export class UsageAnalyticsService {
     const duration = current.end.getTime() - current.start.getTime();
     return {
       start: new Date(current.start.getTime() - duration),
-      end: new Date(current.start.getTime()),
+      end: new Date(current.start.getTime() - 1),
     };
   }
 
-  private calculateGrowthRate(
-    _currentData: UsageDataPoint[],
-    _previousPeriod: DateRange,
-  ): number {
-    // Placeholder — para growth real, buscar os dados do período anterior e comparar.
-    return 0;
+  private calculateGrowthRate(currentTotal: number, previousTotal: number): number {
+    if (previousTotal === 0) {
+      return currentTotal === 0 ? 0 : 100;
+    }
+    const diff = ((currentTotal - previousTotal) / previousTotal) * 100;
+    return Math.round(diff * 100) / 100;
   }
 
   async getUsageAlerts(workspaceId: string): Promise<any[]> {
@@ -227,15 +264,18 @@ export class UsageAnalyticsService {
     return records.map((record) => this.mapAlert(record));
   }
 
-  async createUsageAlert(workspaceId: string, alertConfig: any): Promise<any> {
+  async createUsageAlert(
+    workspaceId: string,
+    alertConfig: CreateUsageAlertInput,
+  ): Promise<any> {
     const record = await this.usageAlerts.createAlert({
       workspaceId,
-      metric: alertConfig.metric ?? 'webhooks',
-      threshold: Number(alertConfig.threshold ?? 0),
-      condition: alertConfig.condition ?? 'greater_than',
+      metric: alertConfig.metric,
+      threshold: alertConfig.threshold,
+      condition: alertConfig.condition,
       window: alertConfig.window ?? '24h',
       channel: alertConfig.channel ?? 'email',
-      createdBy: alertConfig.createdBy ?? null,
+      createdBy: alertConfig.createdBy,
       metadata: alertConfig.metadata ?? {},
     });
 

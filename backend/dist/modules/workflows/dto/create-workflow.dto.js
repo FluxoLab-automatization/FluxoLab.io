@@ -12,11 +12,76 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateWorkflowDto = exports.WorkflowDefinitionDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
+class WorkflowNodePositionDto {
+    x;
+    y;
+}
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], WorkflowNodePositionDto.prototype, "x", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], WorkflowNodePositionDto.prototype, "y", void 0);
+class WorkflowNodePortDto {
+    id;
+    kind;
+    label;
+    alignment;
+}
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WorkflowNodePortDto.prototype, "id", void 0);
+__decorate([
+    (0, class_validator_1.IsIn)(['input', 'output']),
+    __metadata("design:type", String)
+], WorkflowNodePortDto.prototype, "kind", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WorkflowNodePortDto.prototype, "label", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['left', 'right', 'top', 'bottom']),
+    __metadata("design:type", String)
+], WorkflowNodePortDto.prototype, "alignment", void 0);
+class WorkflowNodeStyleDto {
+    icon;
+    accent;
+    variant;
+    status;
+}
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WorkflowNodeStyleDto.prototype, "icon", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WorkflowNodeStyleDto.prototype, "accent", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['default', 'success', 'warning', 'info']),
+    __metadata("design:type", String)
+], WorkflowNodeStyleDto.prototype, "variant", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['ready', 'inactive', 'error']),
+    __metadata("design:type", String)
+], WorkflowNodeStyleDto.prototype, "status", void 0);
 class WorkflowNodeDto {
     id;
     type;
     name;
     params;
+    position;
+    ports;
+    style;
 }
 __decorate([
     (0, class_validator_1.IsString)(),
@@ -35,11 +100,40 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Object)
 ], WorkflowNodeDto.prototype, "params", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => WorkflowNodePositionDto),
+    __metadata("design:type", WorkflowNodePositionDto)
+], WorkflowNodeDto.prototype, "position", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => WorkflowNodePortDto),
+    __metadata("design:type", Array)
+], WorkflowNodeDto.prototype, "ports", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => WorkflowNodeStyleDto),
+    __metadata("design:type", WorkflowNodeStyleDto)
+], WorkflowNodeDto.prototype, "style", void 0);
 class WorkflowConnectionDto {
+    id;
     from;
     to;
     output;
+    label;
+    variant;
+    fromPort;
+    toPort;
 }
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WorkflowConnectionDto.prototype, "id", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
@@ -53,6 +147,26 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], WorkflowConnectionDto.prototype, "output", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WorkflowConnectionDto.prototype, "label", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['solid', 'dashed']),
+    __metadata("design:type", String)
+], WorkflowConnectionDto.prototype, "variant", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WorkflowConnectionDto.prototype, "fromPort", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WorkflowConnectionDto.prototype, "toPort", void 0);
 class WorkflowDefinitionDto {
     nodes;
     connections;

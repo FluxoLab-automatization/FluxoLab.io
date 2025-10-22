@@ -133,6 +133,10 @@ let WorkflowsService = class WorkflowsService {
         }
         return this.mapVersion(row);
     }
+    async getWorkflowPreview(workspaceId, workflowId) {
+        const version = await this.getActiveVersion(workspaceId, workflowId);
+        return version.definition;
+    }
     async getNextVersion(workflowId) {
         const result = await this.pool.query(`
         SELECT MAX(version)::int AS max
@@ -153,6 +157,80 @@ let WorkflowsService = class WorkflowsService {
             createdAt: row.created_at,
             updatedAt: row.updated_at,
         };
+    }
+    async listWorkflows(workspaceId, options) {
+        const result = await this.pool.query(`
+        SELECT id,
+               workspace_id,
+               name,
+               status,
+               active_version_id,
+               tags,
+               created_at,
+               updated_at
+          FROM workflows
+         WHERE workspace_id = $1
+           AND deleted_at IS NULL
+         ORDER BY updated_at DESC
+         LIMIT $2 OFFSET $3
+      `, [workspaceId, options.limit, options.offset]);
+        return result.rows.map((row) => this.mapWorkflow(row));
+    }
+    async updateWorkflow(workspaceId, workflowId, updates) {
+        const setClauses = [];
+        const values = [workflowId, workspaceId];
+        let paramIndex = 3;
+        if (updates.name !== undefined) {
+            setClauses.push(`name = $${paramIndex++}`);
+            values.push(updates.name);
+        }
+        if (updates.tags !== undefined) {
+            setClauses.push(`tags = $${paramIndex++}`);
+            values.push(updates.tags);
+        }
+        if (setClauses.length === 0) {
+            return this.getWorkflow(workspaceId, workflowId);
+        }
+        setClauses.push(`updated_at = NOW()`);
+        const result = await this.pool.query(`
+        UPDATE workflows
+           SET ${setClauses.join(', ')}
+         WHERE id = $1
+           AND workspace_id = $2
+           AND deleted_at IS NULL
+         RETURNING id,
+                   workspace_id,
+                   name,
+                   status,
+                   active_version_id,
+                   tags,
+                   created_at,
+                   updated_at
+      `, values);
+        const row = result.rows[0];
+        if (!row) {
+            throw new common_1.NotFoundException({
+                status: 'error',
+                message: 'Workflow not found',
+            });
+        }
+        return this.mapWorkflow(row);
+    }
+    async deleteWorkflow(workspaceId, workflowId) {
+        const result = await this.pool.query(`
+        UPDATE workflows
+           SET deleted_at = NOW(),
+               updated_at = NOW()
+         WHERE id = $1
+           AND workspace_id = $2
+           AND deleted_at IS NULL
+      `, [workflowId, workspaceId]);
+        if (result.rowCount === 0) {
+            throw new common_1.NotFoundException({
+                status: 'error',
+                message: 'Workflow not found',
+            });
+        }
     }
     mapVersion(row) {
         return {

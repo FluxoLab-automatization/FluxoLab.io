@@ -3,7 +3,9 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 import { useSessionStore } from '../stores/session.store';
+import { usePreferencesStore } from '../stores/preferences.store';
 import {
   fetchSettingsSummary,
   fetchUsageAlerts,
@@ -38,6 +40,15 @@ const router = useRouter();
 const route = useRoute();
 const sessionStore = useSessionStore();
 const { user, token, initialized } = storeToRefs(sessionStore);
+const preferencesStore = usePreferencesStore();
+const { locale } = storeToRefs(preferencesStore);
+const { t } = useI18n();
+
+const selectedLocale = computed({
+  get: () => locale.value,
+  set: (value: string) => preferencesStore.setLocale(value),
+});
+const localeOptions = preferencesStore.localeOptions;
 
 const sections: Array<{ id: SettingsSection; label: string; description: string }> = [
   { id: 'usage', label: 'Uso e plano', description: 'Limites, consumo e detalhes do plano atual.' },
@@ -673,6 +684,21 @@ async function handleRevokeKey(key: WorkspaceApiKey) {
             </div>
           </article>
         </div>
+        <article class="settings-card settings-card--language">
+          <h3>{{ t('settings.sections.language.title') }}</h3>
+          <p class="settings-muted">{{ t('settings.sections.language.description') }}</p>
+          <div class="settings-form">
+            <label>
+              <span>{{ t('settings.sections.language.selectLabel') }}</span>
+              <select v-model="selectedLocale">
+                <option v-for="option in localeOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </label>
+            <p class="settings-helper">{{ t('settings.sections.language.helper') }}</p>
+          </div>
+        </article>
         <div class="workflow-credentials-wrapper">
           <WorkflowCredentialsPanel />
         </div>
@@ -1142,6 +1168,30 @@ async function handleRevokeKey(key: WorkspaceApiKey) {
   background: rgba(10, 18, 32, 0.92);
   padding: 0.5rem 0.75rem;
   color: #f8fafc;
+}
+
+.settings-form select {
+  border-radius: 0.65rem;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  background: rgba(10, 18, 32, 0.92);
+  padding: 0.55rem 0.75rem;
+  color: #f8fafc;
+}
+
+.settings-form select:focus {
+  outline: none;
+  border-color: rgba(255, 114, 102, 0.65);
+  box-shadow: 0 0 0 3px rgba(255, 114, 102, 0.18);
+}
+
+.settings-helper {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgba(148, 163, 184, 0.78);
+}
+
+.settings-card--language {
+  margin-top: 1.2rem;
 }
 
 .settings-security {

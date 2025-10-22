@@ -11,36 +11,43 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WorkspaceService = void 0;
 const common_1 = require("@nestjs/common");
-const config_1 = require("@nestjs/config");
 const conversations_repository_1 = require("./repositories/conversations.repository");
 const activities_repository_1 = require("./repositories/activities.repository");
 const webhook_events_repository_1 = require("./repositories/webhook-events.repository");
+const workspace_usage_repository_1 = require("./repositories/workspace-usage.repository");
 let WorkspaceService = class WorkspaceService {
     conversationsRepository;
     activitiesRepository;
     webhookRepository;
-    config;
-    constructor(conversationsRepository, activitiesRepository, webhookRepository, config) {
+    usageRepository;
+    constructor(conversationsRepository, activitiesRepository, webhookRepository, usageRepository) {
         this.conversationsRepository = conversationsRepository;
         this.activitiesRepository = activitiesRepository;
         this.webhookRepository = webhookRepository;
-        this.config = config;
+        this.usageRepository = usageRepository;
     }
     async getOverview(user) {
         const workspaceId = user.workspaceId;
-        const [conversations, activities, totalProjects, totalWebhooks, totalEvents, recentEvents,] = await Promise.all([
+        const [conversations, activities, totalProjects, totalWebhooks, totalEvents, recentEvents, usageSnapshot,] = await Promise.all([
             this.conversationsRepository.listRecentByOwner(user.id, 6),
             this.activitiesRepository.listRecentByUser(workspaceId, user.id, 8),
             this.conversationsRepository.countByOwner(user.id),
             this.webhookRepository.countRegistrations(workspaceId),
             this.webhookRepository.countEvents(workspaceId),
             this.webhookRepository.listRecentEvents(workspaceId, 5),
+            this.usageRepository.getLatestSnapshot(workspaceId),
         ]);
         return {
             metrics: {
                 totalProjects,
                 totalWebhooks,
                 totalEvents,
+                activeWorkflows: usageSnapshot?.workflowsActive ?? 0,
+                activeUsers: usageSnapshot?.usersActive ?? 0,
+                eventsInPeriod: usageSnapshot?.webhookEvents ?? 0,
+                usagePeriodLabel: usageSnapshot
+                    ? `${usageSnapshot.periodStart} → ${usageSnapshot.periodEnd}`
+                    : null,
             },
             projects: this.normalizeProjects(conversations),
             activities: this.normalizeActivities(activities),
@@ -50,14 +57,26 @@ let WorkspaceService = class WorkspaceService {
     }
     async listProjects(user, limit = 12) {
         const projects = await this.conversationsRepository.listRecentByOwner(user.id, limit);
-        return projects.map((project) => ({
-            id: project.id,
-            title: project.title,
-            status: project.status,
-            createdAt: project.created_at,
-            updatedAt: project.updated_at,
-            metadata: project.metadata ?? {},
-        }));
+        return projects.map((project) => this.presentProject(project));
+    }
+    async createProject(user, payload) {
+        const metadata = {};
+        if (payload.description) {
+            metadata.description = payload.description;
+        }
+        if (payload.tags?.length) {
+            metadata.tags = payload.tags;
+        }
+        if (payload.icon) {
+            metadata.icon = payload.icon;
+        }
+        const record = await this.conversationsRepository.createProject({
+            ownerId: user.id,
+            title: payload.title.trim(),
+            status: payload.status ?? 'active',
+            metadata,
+        });
+        return this.presentProject(record);
     }
     async listActivities(user, limit = 12) {
         const workspaceId = user.workspaceId;
@@ -83,16 +102,19 @@ let WorkspaceService = class WorkspaceService {
             receivedAt: event.received_at,
         }));
     }
+    presentProject(record) {
+        return {
+            id: record.id,
+            title: record.title,
+            status: record.status,
+            createdAt: record.created_at,
+            updatedAt: record.updated_at,
+            metadata: record.metadata ?? {},
+        };
+    }
     normalizeProjects(records) {
         if (records.length > 0) {
-            return records.map((project) => ({
-                id: project.id,
-                title: project.title,
-                status: project.status,
-                createdAt: project.created_at,
-                updatedAt: project.updated_at,
-                metadata: project.metadata ?? {},
-            }));
+            return records.map((project) => this.presentProject(project));
         }
         return [
             {
@@ -200,6 +222,6 @@ exports.WorkspaceService = WorkspaceService = __decorate([
     __metadata("design:paramtypes", [conversations_repository_1.ConversationsRepository,
         activities_repository_1.ActivitiesRepository,
         webhook_events_repository_1.WorkspaceWebhookRepository,
-        config_1.ConfigService])
+        workspace_usage_repository_1.WorkspaceUsageRepository])
 ], WorkspaceService);
 //# sourceMappingURL=workspace.service.js.map

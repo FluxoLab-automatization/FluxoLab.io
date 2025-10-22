@@ -105,6 +105,34 @@ let WorkflowExecutionsService = class WorkflowExecutionsService {
             params.error ? JSON.stringify(params.error) : null,
         ]);
     }
+    async listExecutions(workspaceId, workflowId, options) {
+        const result = await this.pool.query(`
+        SELECT id,
+               workspace_id,
+               workflow_id,
+               workflow_version_id,
+               trigger_event_id,
+               correlation_id,
+               status,
+               started_at,
+               finished_at,
+               created_at
+          FROM executions
+         WHERE workspace_id = $1
+           AND workflow_id = $2
+         ORDER BY created_at DESC
+         LIMIT $3 OFFSET $4
+      `, [workspaceId, workflowId, options.limit, options.offset]);
+        return result.rows.map((row) => ({
+            id: row.id,
+            workspaceId: row.workspace_id,
+            workflowId: row.workflow_id,
+            workflowVersionId: row.workflow_version_id,
+            triggerEventId: row.trigger_event_id ?? null,
+            correlationId: row.correlation_id ?? null,
+            status: row.status,
+        }));
+    }
     async getExecution(executionId) {
         const result = await this.pool.query(`
         SELECT id,

@@ -203,6 +203,14 @@ export class WorkflowsService {
     return this.mapVersion(row);
   }
 
+  async getWorkflowPreview(
+    workspaceId: string,
+    workflowId: string,
+  ): Promise<WorkflowDefinition> {
+    const version = await this.getActiveVersion(workspaceId, workflowId);
+    return version.definition;
+  }
+
   private async getNextVersion(workflowId: string): Promise<number> {
     const result = await this.pool.query<{ max: number | null }>(
       `
@@ -227,6 +235,105 @@ export class WorkflowsService {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
+  }
+
+  async listWorkflows(workspaceId: string, options: { limit: number; offset: number }): Promise<WorkflowEntity[]> {
+    const result = await this.pool.query<WorkflowRow>(
+      `
+        SELECT id,
+               workspace_id,
+               name,
+               status,
+               active_version_id,
+               tags,
+               created_at,
+               updated_at
+          FROM workflows
+         WHERE workspace_id = $1
+           AND deleted_at IS NULL
+         ORDER BY updated_at DESC
+         LIMIT $2 OFFSET $3
+      `,
+      [workspaceId, options.limit, options.offset],
+    );
+
+    return result.rows.map((row) => this.mapWorkflow(row));
+  }
+
+  async updateWorkflow(
+    workspaceId: string,
+    workflowId: string,
+    updates: { name?: string; tags?: string[] },
+  ): Promise<WorkflowEntity> {
+    const setClauses: string[] = [];
+    const values: unknown[] = [workflowId, workspaceId];
+    let paramIndex = 3;
+
+    if (updates.name !== undefined) {
+      setClauses.push(`name = $${paramIndex++}`);
+      values.push(updates.name);
+    }
+
+    if (updates.tags !== undefined) {
+      setClauses.push(`tags = $${paramIndex++}`);
+      values.push(updates.tags);
+    }
+
+    if (setClauses.length === 0) {
+      return this.getWorkflow(workspaceId, workflowId);
+    }
+
+    setClauses.push(`updated_at = NOW()`);
+
+    const result = await this.pool.query<WorkflowRow>(
+      `
+        UPDATE workflows
+           SET ${setClauses.join(', ')}
+         WHERE id = $1
+           AND workspace_id = $2
+           AND deleted_at IS NULL
+         RETURNING id,
+                   workspace_id,
+                   name,
+                   status,
+                   active_version_id,
+                   tags,
+                   created_at,
+                   updated_at
+      `,
+      values,
+    );
+
+    const row = result.rows[0];
+    if (!row) {
+      throw new NotFoundException({
+        status: 'error',
+        message: 'Workflow not found',
+      });
+    }
+
+    return this.mapWorkflow(row);
+  }
+
+  async deleteWorkflow(workspaceId: string, workflowId: string): Promise<void> {
+    const result = await this.pool.query(
+      `
+        UPDATE workflows
+           SET deleted_at = NOW(),
+               updated_at = NOW()
+         WHERE id = $1
+           AND workspace_id = $2
+           AND deleted_at IS NULL
+      `,
+      [workflowId, workspaceId],
+    );
+
+    if (result.rowCount === 0) {
+      throw new NotFoundException({
+        status: 'error',
+        message: 'Workflow not found',
+      });
+    }
   }
 
   private mapVersion(row: WorkflowVersionRow): WorkflowVersionEntity {

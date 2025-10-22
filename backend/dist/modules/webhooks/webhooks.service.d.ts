@@ -1,54 +1,88 @@
-import { ConfigService } from '@nestjs/config';
-import { PinoLogger } from 'nestjs-pino';
-import type { AppConfig } from '../../config/env.validation';
-import { SecurityService } from '../../shared/security/security.service';
-import { GenerateWebhookDto } from './dto/generate-webhook.dto';
-import { WorkflowWebhookService } from '../workflows/workflow-webhook.service';
-interface VerifyQuery {
-    'hub.mode'?: string;
-    'hub.verify_token'?: string;
-    'hub.challenge'?: string;
-    [key: string]: string | string[] | undefined;
+import { DatabaseService } from '../../shared/database/database.service';
+export interface WebhookEntity {
+    id: string;
+    workspaceId: string;
+    name: string;
+    path: string;
+    method: string;
+    authentication: 'none' | 'basic' | 'bearer' | 'api-key';
+    respondMode: 'immediately' | 'when_complete' | 'never';
+    workflowId: string | null;
+    isActive: boolean;
+    token: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+export interface WebhookLog {
+    id: string;
+    webhookId: string;
+    method: string;
+    path: string;
+    headers: Record<string, string>;
+    query: Record<string, string>;
+    payload: any;
+    responseStatus: number;
+    responseBody: any;
+    executionTime: number;
+    createdAt: Date;
+}
+export interface WebhookExecutionResult {
+    success: boolean;
+    status: number;
+    body: any;
+    executionId?: string;
+    error?: string;
 }
 export declare class WebhooksService {
-    private readonly webhookService;
-    private readonly securityService;
-    private readonly config;
-    private readonly logger;
-    private readonly baseUrl;
-    private readonly receivingBasePath;
-    private readonly verifyToken;
-    private readonly appSecret;
-    constructor(webhookService: WorkflowWebhookService, securityService: SecurityService, config: ConfigService<AppConfig, true>, logger: PinoLogger);
-    generateWebhook(dto: GenerateWebhookDto): Promise<{
-        status: string;
-        message: string;
-        token: string;
-        webhookUrl: string;
-        registrationId: string;
+    private readonly database;
+    constructor(database: DatabaseService);
+    private get pool();
+    createWebhook(workspaceId: string, webhookData: {
+        name: string;
+        path: string;
+        method: string;
+        authentication: string;
+        respondMode: string;
+        workflowId?: string;
+        createdBy: string;
+    }): Promise<WebhookEntity>;
+    listWebhooks(workspaceId: string, options: {
+        limit: number;
+        offset: number;
+    }): Promise<{
+        webhooks: WebhookEntity[];
+        total: number;
     }>;
-    verifyWebhook(token: string, query: VerifyQuery, headers: Record<string, unknown>): Promise<string>;
-    receiveWebhook(token: string, method: string, query: Record<string, unknown>, body: unknown, headers: Record<string, unknown>, rawBody: Buffer | undefined): Promise<{
-        status: string;
-        message: string;
-        eventId: string;
-        processing: {
-            routeTo: string;
-            workspaceId: string;
-            receivedType: string;
-            respondMode: "immediate" | "on_last_node" | "via_node";
-            instruction: string;
-            payloadSize: number;
-        };
+    getWebhook(workspaceId: string, webhookId: string): Promise<WebhookEntity>;
+    updateWebhook(workspaceId: string, webhookId: string, updates: Partial<{
+        name: string;
+        path: string;
+        method: string;
+        authentication: string;
+        respondMode: string;
+        workflowId: string;
+        isActive: boolean;
+    }>): Promise<WebhookEntity>;
+    deleteWebhook(workspaceId: string, webhookId: string): Promise<void>;
+    testWebhook(workspaceId: string, webhookId: string, testData: any): Promise<{
+        success: boolean;
+        response: any;
+        executionTime: number;
     }>;
-    private requireRegistration;
-    private verifyMetaSignature;
-    private buildProcessingSummary;
-    private extractEventType;
-    private normalizeQuery;
-    private extractSignatureHeader;
-    private normalizeRelativePath;
-    private buildRoutePath;
-    private headerSnapshot;
+    executeWebhook(token: string, requestData: {
+        payload: any;
+        query: any;
+        headers: Record<string, string>;
+        method: string;
+    }): Promise<WebhookExecutionResult>;
+    getWebhookLogs(workspaceId: string, webhookId: string, options: {
+        limit: number;
+        offset: number;
+    }): Promise<{
+        logs: WebhookLog[];
+        total: number;
+    }>;
+    private logWebhookExecution;
+    private generateWebhookToken;
+    private mapWebhook;
 }
-export {};

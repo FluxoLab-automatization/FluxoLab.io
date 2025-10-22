@@ -59,7 +59,14 @@ let UsageAnalyticsService = UsageAnalyticsService_1 = class UsageAnalyticsServic
                 label: 'Webhook Events',
             };
         });
-        return this.buildUsageResponse('webhooks', data, dateRange);
+        const previousRange = this.getPreviousPeriod(dateRange);
+        const previousResult = await pool.query(query, [
+            workspaceId,
+            previousRange.start,
+            previousRange.end,
+        ]);
+        const previousTotal = previousResult.rows.reduce((sum, row) => sum + Number(row.value), 0);
+        return this.buildUsageResponse('webhooks', data, dateRange, previousTotal);
     }
     async getUserUsageHistory(workspaceId, dateRange) {
         const pool = this.database.getPool();
@@ -83,7 +90,14 @@ let UsageAnalyticsService = UsageAnalyticsService_1 = class UsageAnalyticsServic
                 label: 'Active Users',
             };
         });
-        return this.buildUsageResponse('users', data, dateRange);
+        const previousRange = this.getPreviousPeriod(dateRange);
+        const previousResult = await pool.query(query, [
+            workspaceId,
+            previousRange.start,
+            previousRange.end,
+        ]);
+        const previousTotal = previousResult.rows.reduce((sum, row) => sum + Number(row.value), 0);
+        return this.buildUsageResponse('users', data, dateRange, previousTotal);
     }
     async getWorkflowUsageHistory(workspaceId, dateRange) {
         const pool = this.database.getPool();
@@ -108,14 +122,20 @@ let UsageAnalyticsService = UsageAnalyticsService_1 = class UsageAnalyticsServic
                 label: 'Active Workflows',
             };
         });
-        return this.buildUsageResponse('workflows', data, dateRange);
+        const previousRange = this.getPreviousPeriod(dateRange);
+        const previousResult = await pool.query(query, [
+            workspaceId,
+            previousRange.start,
+            previousRange.end,
+        ]);
+        const previousTotal = previousResult.rows.reduce((sum, row) => sum + Number(row.value), 0);
+        return this.buildUsageResponse('workflows', data, dateRange, previousTotal);
     }
-    buildUsageResponse(metric, data, dateRange) {
+    buildUsageResponse(metric, data, dateRange, previousTotal) {
         const total = data.reduce((sum, point) => sum + point.value, 0);
         const average = data.length > 0 ? total / data.length : 0;
         const peak = Math.max(...data.map((point) => point.value), 0);
-        const previousPeriod = this.getPreviousPeriod(dateRange);
-        const growth = this.calculateGrowthRate(data, previousPeriod);
+        const growth = this.calculateGrowthRate(total, previousTotal);
         return {
             metric,
             period: `${dateRange.start.toISOString().slice(0, 10)} to ${dateRange.end
@@ -151,11 +171,15 @@ let UsageAnalyticsService = UsageAnalyticsService_1 = class UsageAnalyticsServic
         const duration = current.end.getTime() - current.start.getTime();
         return {
             start: new Date(current.start.getTime() - duration),
-            end: new Date(current.start.getTime()),
+            end: new Date(current.start.getTime() - 1),
         };
     }
-    calculateGrowthRate(_currentData, _previousPeriod) {
-        return 0;
+    calculateGrowthRate(currentTotal, previousTotal) {
+        if (previousTotal === 0) {
+            return currentTotal === 0 ? 0 : 100;
+        }
+        const diff = ((currentTotal - previousTotal) / previousTotal) * 100;
+        return Math.round(diff * 100) / 100;
     }
     async getUsageAlerts(workspaceId) {
         const records = await this.usageAlerts.listByWorkspace(workspaceId);
@@ -164,12 +188,12 @@ let UsageAnalyticsService = UsageAnalyticsService_1 = class UsageAnalyticsServic
     async createUsageAlert(workspaceId, alertConfig) {
         const record = await this.usageAlerts.createAlert({
             workspaceId,
-            metric: alertConfig.metric ?? 'webhooks',
-            threshold: Number(alertConfig.threshold ?? 0),
-            condition: alertConfig.condition ?? 'greater_than',
+            metric: alertConfig.metric,
+            threshold: alertConfig.threshold,
+            condition: alertConfig.condition,
             window: alertConfig.window ?? '24h',
             channel: alertConfig.channel ?? 'email',
-            createdBy: alertConfig.createdBy ?? null,
+            createdBy: alertConfig.createdBy,
             metadata: alertConfig.metadata ?? {},
         });
         let finalRecord = record;

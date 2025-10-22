@@ -19,6 +19,35 @@ export class ConversationsRepository {
     return this.database.getPool();
   }
 
+  async createProject(params: {
+    ownerId: string;
+    title: string;
+    status: string;
+    metadata: Record<string, unknown>;
+  }): Promise<ConversationRecord> {
+    const result = await this.pool.query<ConversationRecord>(
+      `
+        INSERT INTO conversations (owner_id, title, status, metadata)
+        VALUES ($1, $2, $3, $4::jsonb)
+        RETURNING id,
+                  owner_id,
+                  title,
+                  status,
+                  metadata,
+                  created_at,
+                  updated_at
+      `,
+      [
+        params.ownerId,
+        params.title,
+        params.status,
+        JSON.stringify(params.metadata ?? {}),
+      ],
+    );
+
+    return result.rows[0];
+  }
+
   async listRecentByOwner(
     ownerId: string,
     limit: number,

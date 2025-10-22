@@ -43,17 +43,44 @@ let PlanManagementService = PlanManagementService_1 = class PlanManagementServic
             code: row.code,
             name: row.name,
             description: row.description,
-            priceAmount: row.price_amount,
+            priceAmount: Number(row.price_amount ?? 0),
             currency: row.currency,
-            billingInterval: row.billing_interval,
-            features: row.features || [],
+            billingInterval: row.billing_interval ?? 'month',
+            features: this.normalizeFeatures(row.features),
             limits: {
-                workspaces: row.limits_workspaces,
-                users: row.limits_users,
-                webhook: row.limits_webhook,
+                workspaces: this.normalizeLimit(row.limits_workspaces),
+                users: this.normalizeLimit(row.limits_users),
+                webhook: this.normalizeLimit(row.limits_webhook),
             },
-            popular: row.popular || false,
+            popular: Boolean(row.popular),
         }));
+    }
+    normalizeFeatures(raw) {
+        if (Array.isArray(raw)) {
+            return raw.filter((item) => typeof item === 'string');
+        }
+        if (typeof raw === 'string') {
+            try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    return parsed.filter((item) => typeof item === 'string');
+                }
+            }
+            catch {
+            }
+            return raw
+                .split(',')
+                .map((feature) => feature.trim())
+                .filter(Boolean);
+        }
+        return [];
+    }
+    normalizeLimit(value) {
+        if (value === null || value === undefined) {
+            return null;
+        }
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric : null;
     }
     async upgradePlan(workspaceId, upgradeData) {
         const pool = this.database.getPool();
@@ -119,14 +146,14 @@ let PlanManagementService = PlanManagementService_1 = class PlanManagementServic
                 code: newPlan.code,
                 name: newPlan.name,
                 description: newPlan.description,
-                priceAmount: newPlan.price_amount,
+                priceAmount: Number(newPlan.price_amount ?? 0),
                 currency: newPlan.currency,
-                billingInterval: upgradeData.billingInterval ?? 'month',
-                features: newPlan.features || [],
+                billingInterval: upgradeData.billingInterval ?? newPlan.billing_interval ?? 'month',
+                features: this.normalizeFeatures(newPlan.features),
                 limits: {
-                    workspaces: newPlan.limits_workspaces,
-                    users: newPlan.limits_users,
-                    webhook: newPlan.limits_webhook,
+                    workspaces: this.normalizeLimit(newPlan.limits_workspaces),
+                    users: this.normalizeLimit(newPlan.limits_users),
+                    webhook: this.normalizeLimit(newPlan.limits_webhook),
                 },
             };
             return {

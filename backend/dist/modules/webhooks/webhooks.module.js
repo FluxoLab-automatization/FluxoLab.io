@@ -11,12 +11,13 @@ const common_1 = require("@nestjs/common");
 const webhooks_controller_1 = require("./webhooks.controller");
 const webhooks_service_1 = require("./webhooks.service");
 const workflows_module_1 = require("../workflows/workflows.module");
+const database_module_1 = require("../../shared/database/database.module");
 let WebhooksModule = class WebhooksModule {
 };
 exports.WebhooksModule = WebhooksModule;
 exports.WebhooksModule = WebhooksModule = __decorate([
     (0, common_1.Module)({
-        imports: [workflows_module_1.WorkflowsModule],
+        imports: [workflows_module_1.WorkflowsModule, database_module_1.DatabaseModule],
         controllers: [webhooks_controller_1.WebhooksController],
         providers: [webhooks_service_1.WebhooksService],
         exports: [webhooks_service_1.WebhooksService],

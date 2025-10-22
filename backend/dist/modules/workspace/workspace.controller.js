@@ -18,6 +18,7 @@ const workspace_service_1 = require("./workspace.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const require_workspace_guard_1 = require("../auth/require-workspace.guard");
 const current_user_decorator_1 = require("../auth/current-user.decorator");
+const create_project_dto_1 = require("./dto/create-project.dto");
 let WorkspaceController = class WorkspaceController {
     workspaceService;
     constructor(workspaceService) {
@@ -42,6 +43,13 @@ let WorkspaceController = class WorkspaceController {
         return {
             status: 'ok',
             activities,
+        };
+    }
+    async createProject(user, payload) {
+        const project = await this.workspaceService.createProject(user, payload);
+        return {
+            status: 'created',
+            project,
         };
     }
     async listRecentWebhooks(user, limit) {
@@ -79,6 +87,15 @@ __decorate([
     __metadata("design:paramtypes", [Object, Number]),
     __metadata("design:returntype", Promise)
 ], WorkspaceController.prototype, "listActivities", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, require_workspace_guard_1.RequireWorkspaceGuard),
+    (0, common_1.Post)('projects'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, create_project_dto_1.CreateProjectDto]),
+    __metadata("design:returntype", Promise)
+], WorkspaceController.prototype, "createProject", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, require_workspace_guard_1.RequireWorkspaceGuard),
     (0, common_1.Get)('webhooks/recent'),

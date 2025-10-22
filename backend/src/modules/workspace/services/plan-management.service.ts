@@ -5,6 +5,7 @@ import {
   CancelSubscriptionDto,
   AvailablePlan,
   PlanUpgradeResponse,
+  BillingInterval,
 } from '../dto/plan-management.dto';
 
 @Injectable()
@@ -40,17 +41,46 @@ export class PlanManagementService {
       code: row.code,
       name: row.name,
       description: row.description,
-      priceAmount: row.price_amount,
+      priceAmount: Number(row.price_amount ?? 0),
       currency: row.currency,
-      billingInterval: row.billing_interval, // ok ler snake_case do DB
-      features: row.features || [],
+      billingInterval: (row.billing_interval as BillingInterval) ?? 'month',
+      features: this.normalizeFeatures(row.features),
       limits: {
-        workspaces: row.limits_workspaces,
-        users: row.limits_users,
-        webhook: row.limits_webhook,
+        workspaces: this.normalizeLimit(row.limits_workspaces),
+        users: this.normalizeLimit(row.limits_users),
+        webhook: this.normalizeLimit(row.limits_webhook),
       },
-      popular: row.popular || false,
+      popular: Boolean(row.popular),
     }));
+  }
+
+  private normalizeFeatures(raw: unknown): string[] {
+    if (Array.isArray(raw)) {
+      return raw.filter((item): item is string => typeof item === 'string');
+    }
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item): item is string => typeof item === 'string');
+        }
+      } catch {
+        // ignore parse errors
+      }
+      return raw
+        .split(',')
+        .map((feature) => feature.trim())
+        .filter(Boolean);
+    }
+    return [];
+  }
+
+  private normalizeLimit(value: unknown): number | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
   }
 
   async upgradePlan(
@@ -146,14 +176,15 @@ export class PlanManagementService {
         code: newPlan.code,
         name: newPlan.name,
         description: newPlan.description,
-        priceAmount: newPlan.price_amount,
+        priceAmount: Number(newPlan.price_amount ?? 0),
         currency: newPlan.currency,
-        billingInterval: upgradeData.billingInterval ?? 'month',
-        features: newPlan.features || [],
+        billingInterval:
+          upgradeData.billingInterval ?? (newPlan.billing_interval as BillingInterval) ?? 'month',
+        features: this.normalizeFeatures(newPlan.features),
         limits: {
-          workspaces: newPlan.limits_workspaces,
-          users: newPlan.limits_users,
-          webhook: newPlan.limits_webhook,
+          workspaces: this.normalizeLimit(newPlan.limits_workspaces),
+          users: this.normalizeLimit(newPlan.limits_users),
+          webhook: this.normalizeLimit(newPlan.limits_webhook),
         },
       };
 

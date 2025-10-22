@@ -23,3 +23,23 @@ export async function fetchWorkspaceOverview(
 
   return overview;
 }
+export async function createWorkspaceProject(
+  token: string,
+  payload: {
+    title: string;
+    description?: string;
+    tags?: string[];
+    status?: string;
+    icon?: string;
+  },
+) {
+  return apiFetch<{ status: string; project: WorkspaceOverview['projects'][number] }>(
+    '/workspace/projects',
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    },
+  );
+}
+

@@ -20,6 +20,25 @@ let ConversationsRepository = class ConversationsRepository {
     get pool() {
         return this.database.getPool();
     }
+    async createProject(params) {
+        const result = await this.pool.query(`
+        INSERT INTO conversations (owner_id, title, status, metadata)
+        VALUES ($1, $2, $3, $4::jsonb)
+        RETURNING id,
+                  owner_id,
+                  title,
+                  status,
+                  metadata,
+                  created_at,
+                  updated_at
+      `, [
+            params.ownerId,
+            params.title,
+            params.status,
+            JSON.stringify(params.metadata ?? {}),
+        ]);
+        return result.rows[0];
+    }
     async listRecentByOwner(ownerId, limit) {
         const result = await this.pool.query(`
         SELECT id,

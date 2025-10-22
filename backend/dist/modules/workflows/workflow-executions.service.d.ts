@@ -44,6 +44,10 @@ export declare class WorkflowExecutionsService {
     markRunning(executionId: string): Promise<void>;
     markFinished(executionId: string, status: 'succeeded' | 'failed' | 'canceled', error?: unknown): Promise<void>;
     appendStep(params: AppendStepParams): Promise<void>;
+    listExecutions(workspaceId: string, workflowId: string, options: {
+        limit: number;
+        offset: number;
+    }): Promise<ExecutionWithDetails[]>;
     getExecution(executionId: string): Promise<ExecutionWithDetails | null>;
 }
 export {};

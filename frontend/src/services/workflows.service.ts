@@ -79,3 +79,93 @@ export async function createWorkflowCredential(
     },
   );
 }
+
+export interface WorkflowSummary {
+  id: string;
+  name: string;
+  status: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkflowDetails extends WorkflowSummary {
+  definition: WorkflowDefinitionPayload;
+  version: number;
+}
+
+export interface WorkflowExecution {
+  id: string;
+  workflowId: string;
+  status: string;
+  createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+}
+
+export async function listWorkflows(
+  token: string,
+  params: { limit?: number; offset?: number } = {},
+): Promise<{ workflows: WorkflowSummary[] }> {
+  const searchParams = new URLSearchParams();
+  if (params.limit) searchParams.set('limit', String(params.limit));
+  if (params.offset) searchParams.set('offset', String(params.offset));
+
+  const query = searchParams.toString();
+  const url = `/workflows${query ? `?${query}` : ''}`;
+
+  return apiFetch<{ workflows: WorkflowSummary[] }>(url, {
+    method: 'GET',
+    token,
+  });
+}
+
+export async function getWorkflow(
+  token: string,
+  workflowId: string,
+): Promise<{ workflow: WorkflowDetails }> {
+  return apiFetch<{ workflow: WorkflowDetails }>(`/workflows/${workflowId}`, {
+    method: 'GET',
+    token,
+  });
+}
+
+export async function updateWorkflow(
+  token: string,
+  workflowId: string,
+  payload: Partial<CreateWorkflowPayload>,
+): Promise<{ workflow: WorkflowSummary }> {
+  return apiFetch<{ workflow: WorkflowSummary }>(`/workflows/${workflowId}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteWorkflow(
+  token: string,
+  workflowId: string,
+): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>(`/workflows/${workflowId}`, {
+    method: 'DELETE',
+    token,
+  });
+}
+
+export async function listWorkflowExecutions(
+  token: string,
+  workflowId: string,
+  params: { limit?: number; offset?: number } = {},
+): Promise<{ executions: WorkflowExecution[] }> {
+  const searchParams = new URLSearchParams();
+  if (params.limit) searchParams.set('limit', String(params.limit));
+  if (params.offset) searchParams.set('offset', String(params.offset));
+
+  const query = searchParams.toString();
+  const url = `/workflows/${workflowId}/executions${query ? `?${query}` : ''}`;
+
+  return apiFetch<{ executions: WorkflowExecution[] }>(url, {
+    method: 'GET',
+    token,
+  });
+}

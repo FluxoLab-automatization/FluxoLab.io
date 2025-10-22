@@ -11,26 +11,42 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WorkflowsProcessor = void 0;
 const bull_1 = require("@nestjs/bull");
+const config_1 = require("@nestjs/config");
 const whatsapp_service_1 = require("../whatsapp/whatsapp.service");
 let WorkflowsProcessor = class WorkflowsProcessor {
     whatsappService;
-    constructor(whatsappService) {
+    config;
+    constructor(whatsappService, config) {
         this.whatsappService = whatsappService;
+        this.config = config;
     }
     async handleLeadCaptured(job) {
         console.log('--- Workflow Processor ---');
         console.log('Processing job:', job.id);
         console.log('Job Name:', job.name);
         console.log('Lead Payload:', JSON.stringify(job.data.payload, null, 2));
-        const phone = job.data.payload?.phone;
-        if (phone) {
-            const message = `Olá! Recebemos seu contato. Em breve um de nossos especialistas falará com você. Lead: ${job.data.payload?.name || 'N/A'}`;
-            await this.whatsappService.sendMessage('553199999-9999', message);
+        const payloadPhone = job.data.payload?.phone;
+        const fallbackPhone = this.config.get('WHATSAPP_LEAD_ALERT_PHONE', { infer: true }) ?? null;
+        const targetPhone = this.normalizePhone(payloadPhone ?? fallbackPhone);
+        if (targetPhone) {
+            const leadName = job.data.payload?.name || 'N/A';
+            const message = `Ola! Recebemos seu contato. Em breve um de nossos especialistas falara com voce. Lead: ${leadName}`;
+            await this.whatsappService.sendMessage(targetPhone, message);
         }
         else {
-            console.warn('Job payload does not contain a phone number. Cannot send WhatsApp message.');
+            console.warn('Lead captured job does not contain a valid phone and no fallback was configured.');
         }
         console.log('--- End of Job ---');
+    }
+    normalizePhone(value) {
+        if (!value) {
+            return null;
+        }
+        const digits = value.replace(/\D+/g, '');
+        if (digits.length < 10) {
+            return null;
+        }
+        return digits;
     }
 };
 exports.WorkflowsProcessor = WorkflowsProcessor;
@@ -42,6 +58,7 @@ __decorate([
 ], WorkflowsProcessor.prototype, "handleLeadCaptured", null);
 exports.WorkflowsProcessor = WorkflowsProcessor = __decorate([
     (0, bull_1.Processor)('workflows'),
-    __metadata("design:paramtypes", [whatsapp_service_1.WhatsappService])
+    __metadata("design:paramtypes", [whatsapp_service_1.WhatsappService,
+        config_1.ConfigService])
 ], WorkflowsProcessor);
 //# sourceMappingURL=workflows.processor.js.map

@@ -12,6 +12,12 @@ export declare class ConversationsRepository {
     private readonly database;
     constructor(database: DatabaseService);
     private get pool();
+    createProject(params: {
+        ownerId: string;
+        title: string;
+        status: string;
+        metadata: Record<string, unknown>;
+    }): Promise<ConversationRecord>;
     listRecentByOwner(ownerId: string, limit: number): Promise<ConversationRecord[]>;
     countByOwner(ownerId: string): Promise<number>;
 }

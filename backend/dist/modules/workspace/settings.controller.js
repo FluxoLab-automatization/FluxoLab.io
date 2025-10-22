@@ -23,6 +23,7 @@ const workspace_api_keys_service_1 = require("./services/workspace-api-keys.serv
 const workspace_integrations_service_1 = require("./services/workspace-integrations.service");
 const usage_history_dto_1 = require("./dto/usage-history.dto");
 const plan_management_dto_1 = require("./dto/plan-management.dto");
+const settings_requests_dto_1 = require("./dto/settings-requests.dto");
 let SettingsController = class SettingsController {
     workspaceSettingsService;
     usageAnalyticsService;
@@ -66,9 +67,18 @@ let SettingsController = class SettingsController {
             alerts,
         };
     }
-    async createUsageAlert(user, alertConfig) {
+    async createUsageAlert(user, payload) {
         const workspaceId = this.requireWorkspaceId(user);
-        const alert = await this.usageAnalyticsService.createUsageAlert(workspaceId, alertConfig);
+        const alert = await this.usageAnalyticsService.createUsageAlert(workspaceId, {
+            metric: payload.metric,
+            threshold: payload.threshold,
+            condition: payload.condition,
+            window: payload.window,
+            channel: payload.channel,
+            enabled: payload.enabled,
+            metadata: payload.metadata ?? {},
+            createdBy: user.id,
+        });
         return {
             status: 'ok',
             alert,
@@ -128,14 +138,14 @@ let SettingsController = class SettingsController {
             environment: updated,
         };
     }
-    async configureSso(user, body) {
+    async configureSso(user, payload) {
         const workspaceId = this.requireWorkspaceId(user);
         await this.integrationsService.configureSso({
             workspaceId,
-            provider: body.provider,
-            clientId: body.clientId,
-            clientSecret: body.clientSecret,
-            enabled: body.enabled,
+            provider: payload.provider,
+            clientId: payload.clientId,
+            clientSecret: payload.clientSecret,
+            enabled: payload.enabled,
             recordedBy: user.id,
         });
         return {
@@ -143,16 +153,16 @@ let SettingsController = class SettingsController {
             message: 'SSO configuration updated successfully',
         };
     }
-    async configureLdap(user, body) {
+    async configureLdap(user, payload) {
         const workspaceId = this.requireWorkspaceId(user);
         await this.integrationsService.configureLdap({
             workspaceId,
-            host: body.host,
-            baseDn: body.baseDn,
-            port: body.port,
-            bindDn: body.bindDn,
-            bindPassword: body.bindPassword,
-            enabled: body.enabled,
+            host: payload.host,
+            baseDn: payload.baseDn,
+            port: payload.port,
+            bindDn: payload.bindDn,
+            bindPassword: payload.bindPassword,
+            enabled: payload.enabled,
             recordedBy: user.id,
         });
         return {
@@ -160,14 +170,14 @@ let SettingsController = class SettingsController {
             message: 'LDAP configuration updated successfully',
         };
     }
-    async configureLogDestination(user, body) {
+    async configureLogDestination(user, payload) {
         const workspaceId = this.requireWorkspaceId(user);
         await this.integrationsService.configureLogDestination({
             workspaceId,
-            destination: body.destination,
-            endpoint: body.endpoint,
-            apiKey: body.apiKey,
-            enabled: body.enabled,
+            destination: payload.destination,
+            endpoint: payload.endpoint,
+            apiKey: payload.apiKey,
+            enabled: payload.enabled,
             recordedBy: user.id,
         });
         return {
@@ -175,27 +185,27 @@ let SettingsController = class SettingsController {
             message: 'Log destination updated successfully',
         };
     }
-    async updateProfile(user, profileData) {
+    async updateProfile(user, _profileData) {
         return {
             status: 'ok',
             message: 'Profile updated successfully',
         };
     }
-    async updateSecuritySettings(user, securityData) {
+    async updateSecuritySettings(user, _securityData) {
         return {
             status: 'ok',
             message: 'Security settings updated successfully',
         };
     }
-    async createApiKey(user, keyData) {
+    async createApiKey(user, payload) {
         const workspaceId = this.requireWorkspaceId(user);
         const { token, key } = await this.apiKeysService.createKey({
             workspaceId,
-            label: keyData.label ?? 'Chave API',
-            scopes: Array.isArray(keyData.scopes) ? keyData.scopes : [],
+            label: payload.label ?? 'Chave API',
+            scopes: payload.scopes ?? [],
             createdBy: user.id,
-            expiresAt: keyData.expiresAt ? new Date(keyData.expiresAt) : null,
-            metadata: keyData.metadata ?? {},
+            expiresAt: payload.expiresAt ? new Date(payload.expiresAt) : null,
+            metadata: payload.metadata ?? {},
         });
         return {
             status: 'ok',
@@ -268,7 +278,7 @@ __decorate([
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, settings_requests_dto_1.CreateUsageAlertDto]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "createUsageAlert", null);
 __decorate([
@@ -319,7 +329,7 @@ __decorate([
     __param(1, (0, common_1.Param)('environmentId')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, Object]),
+    __metadata("design:paramtypes", [Object, String, settings_requests_dto_1.UpdateEnvironmentStatusDto]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "setEnvironmentStatus", null);
 __decorate([
@@ -328,7 +338,7 @@ __decorate([
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, settings_requests_dto_1.ConfigureSsoDto]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "configureSso", null);
 __decorate([
@@ -337,7 +347,7 @@ __decorate([
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, settings_requests_dto_1.ConfigureLdapDto]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "configureLdap", null);
 __decorate([
@@ -346,7 +356,7 @@ __decorate([
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, settings_requests_dto_1.ConfigureLogDestinationDto]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "configureLogDestination", null);
 __decorate([
@@ -355,7 +365,7 @@ __decorate([
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, settings_requests_dto_1.UpdateProfileDto]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "updateProfile", null);
 __decorate([
@@ -364,7 +374,7 @@ __decorate([
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, settings_requests_dto_1.UpdateSecuritySettingsDto]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "updateSecuritySettings", null);
 __decorate([
@@ -373,7 +383,7 @@ __decorate([
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, settings_requests_dto_1.CreateApiKeyDto]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "createApiKey", null);
 __decorate([

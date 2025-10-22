@@ -12,6 +12,8 @@ import { WorkflowRunnerService } from './workflow-runner.service';
 import { WorkflowOrchestratorService } from './workflow-orchestrator.service';
 import { WorkflowsController } from './workflows.controller';
 import { WorkflowCredentialsController } from './workflow-credentials.controller';
+import { WorkflowNodesController } from './workflow-nodes.controller';
+import { WorkflowNodesService } from './workflow-nodes.service';
 
 import { WorkflowsProcessor } from './workflows.processor';
 import { WorkflowQueueService } from './workflow-queue.service';
@@ -22,7 +24,7 @@ import { WorkflowQueueService } from './workflow-queue.service';
     WhatsappModule,
     BullModule.registerQueue({ name: 'workflows' }),
   ],
-  controllers: [WorkflowsController, WorkflowCredentialsController],
+  controllers: [WorkflowsController, WorkflowNodesController],
   providers: [
     WorkflowsService,
     WorkflowCredentialsService,
@@ -34,6 +36,7 @@ import { WorkflowQueueService } from './workflow-queue.service';
     WorkflowOrchestratorService,
     WorkflowQueueService,
     WorkflowsProcessor,
+    WorkflowNodesService,
   ],
   exports: [
     WorkflowsService,
@@ -45,6 +48,7 @@ import { WorkflowQueueService } from './workflow-queue.service';
     WorkflowRunnerService,
     WorkflowOrchestratorService,
     WorkflowQueueService,
+    WorkflowNodesService,
   ],
 })
 export class WorkflowsModule {}

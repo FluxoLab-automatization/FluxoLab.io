@@ -34,12 +34,15 @@ let MetricsService = class MetricsService {
         if (existing) {
             existing.count += 1;
             existing.sum += value;
+            existing.bucketCounts = existing.bucketCounts.map((count, index) => value <= existing.buckets[index] ? count + 1 : count);
         }
         else {
+            const bucketCounts = buckets.map((boundary) => (value <= boundary ? 1 : 0));
             this.histograms.set(key, {
                 name,
                 description: `Histogram metric for ${name}`,
                 buckets,
+                bucketCounts,
                 count: 1,
                 sum: value,
                 labels,
@@ -73,9 +76,10 @@ let MetricsService = class MetricsService {
             output += `# TYPE ${histogram.name} histogram\n`;
             output += `${histogram.name}_count${labels} ${histogram.count}\n`;
             output += `${histogram.name}_sum${labels} ${histogram.sum}\n`;
-            for (const bucket of histogram.buckets) {
-                output += `${histogram.name}_bucket{le="${bucket}"}${labels} ${this.getBucketCount(histogram.sum, bucket)}\n`;
-            }
+            histogram.buckets.forEach((bucket, index) => {
+                const cumulative = histogram.bucketCounts[index] ?? 0;
+                output += `${histogram.name}_bucket{le="${bucket}"}${labels} ${cumulative}\n`;
+            });
             output += `${histogram.name}_bucket{le="+Inf"}${labels} ${histogram.count}\n`;
         }
         for (const [name, value] of this.gauges.entries()) {
@@ -100,9 +104,6 @@ let MetricsService = class MetricsService {
             return '';
         const formatted = entries.map(([key, value]) => `${key}="${value}"`).join(',');
         return `{${formatted}}`;
-    }
-    getBucketCount(sum, bucket) {
-        return sum <= bucket ? 1 : 0;
     }
     recordRequest(method, path, statusCode, duration) {
         this.incrementCounter('http_requests_total', {

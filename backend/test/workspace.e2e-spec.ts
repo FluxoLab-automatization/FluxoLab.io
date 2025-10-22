@@ -59,6 +59,26 @@ describe('Workspace (e2e)', () => {
     });
   });
 
+
+describe('/workspace/projects (POST)', () => {
+  it('should create a new project for the authenticated user', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/workspace/projects')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        title: 'Projeto Dashboard',
+        description: 'Configuração rápida do painel',
+        tags: ['dashboard'],
+      })
+      .expect(201);
+
+    expect(response.body.status).toBe('created');
+    expect(response.body.project).toBeDefined();
+    expect(response.body.project.title).toBe('Projeto Dashboard');
+    expect(Array.isArray(response.body.project.metadata.tags)).toBe(true);
+  });
+});
+
   describe('/workspace/projects (GET)', () => {
     it('should return projects list', () => {
       return request(app.getHttpServer())

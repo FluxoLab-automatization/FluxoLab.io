@@ -1,114 +1,74 @@
 # FluxoLab Platform
 
-Monorepo com os serviços principais da plataforma FluxoLab:
+Monorepo dos servicos principais da FluxoLab:
 
-- `backend/`: nova API modular em NestJS/TypeScript (em evolução a partir do código Express legado).
+- `backend/`: API oficial em NestJS/TypeScript (auth, workspaces, workflows, integracoes, WhatsApp e monitoramento).
 - `frontend/`: dashboard SPA em Vue 3 + Vite consumindo a API (`/api`).
-- `server.js`: servidor Express original ainda disponível durante a migração.
+- `db/`: migrations SQL e utilitários para evolução do schema Postgres.
+- `monitoring/`: configuração de Prometheus/Grafana e exporters auxiliares.
 
 > **Requisitos gerais**
 > - Node.js 20+
 > - Postgres 13+
 
-## Backend (Express legado)
+## Comandos principais
 
-API em Node.js para geracao e recebimento de webhooks com persistencia em Postgres. As rotas de webhook foram migradas para o backend NestJS (`/api/*`) e permanecem aqui apenas para indicar o novo caminho (HTTP 410 + `target`).
-
-## Requisitos
-
-- Node.js 18+
-- Postgres 13+
-
-## Configuracao
-
-1. Copie `.env` e ajuste as variaveis:
-   - `DATABASE_URL`: string de conexao do Postgres (usuario com permissaes para criar extensoes e tabelas).
-   - `TOKEN_HASH_SECRET`: segredo usado para derivar o hash do token (nao compartilhe).
-   - `VERIFY_TOKEN` e `APP_SECRET`: exigidos pela integracao Meta/WhatsApp.
-   - `JWT_SECRET` e `JWT_EXPIRES_IN`: configuram a assinatura do token de sessao.
-   - `SIGNUP_ACCESS_TOKEN` (opcional): token de bootstrap para permitir registro de usuarios.
-2. Instale dependencias:
+A raiz delega os scripts para o backend NestJS:
 
 ```bash
+npm install            # instala dependências do backend
+npm run migrate        # aplica migrations em db/migrations
+npm run start          # inicia a API em modo produção
+npm run start:dev      # modo watch (nest start --watch)
+npm run test           # testes do backend
+npm run lint           # lint do backend
+```
+
+Para o front-end:
+
+```bash
+cd frontend
 npm install
+npm run dev            # servidor Vite (proxy para http://localhost:3000/api)
 ```
 
-3. Rode as migracoes:
+## Backend (NestJS)
 
-```bash
-npm run migrate
-```
+O diretorio `backend/` concentra modulos de autenticacao (`AuthModule`), workspaces (settings, billing, integracoes), webhooks, workflows (engine + fila Bull), leads, WhatsApp, MCP e monitoramento.
 
-4. Inicie o servidor:
+- Configuracao de ambiente validada com Zod (`src/config/env.validation.ts`).
+- Postgres via `DatabaseModule` (pool `pg`) e Redis para filas (`BullModule`).
+- Logs com `nestjs-pino`, rate limiting com `@nestjs/throttler`.
+- Métricas expostas em `/api/monitoring/metrics/prometheus`.
 
-```bash
-npm start
-```
-
-## Endpoints legados (Express)
-
-- `POST /auth/register`: cria um usuario (requer `SIGNUP_ACCESS_TOKEN` definido, se configurado).
-- `POST /auth/login`: autentica usuario e retorna JWT + dados basicos para a UI.
-- `POST /generate-webhook`: **depreciado**. Retorna HTTP `410` informando para usar `POST /api/generate-webhook`.
-- `GET /webhooks/:token`: **depreciado**. Retorna HTTP `410` com `target` apontando para `GET /api/webhooks/:token`.
-- `POST /webhooks/:token`: **depreciado**. Retorna HTTP `410` com `target` apontando para `POST /api/webhooks/:token`.
-
-## Endpoints (NestJS)
-
-- `POST /api/generate-webhook`: gera token e URL para um usuario via `WebhooksModule`.
-- `GET /api/webhooks/:token`: valida webhook (challenge Meta/WhatsApp) com registro ativo.
-- `POST /api/webhooks/:token`: recebe eventos, valida assinatura `X-Hub-Signature-256` e registra o payload.
-- `GET /api/workspace/webhooks/recent`: lista eventos recentes (guard JWT).
-
-## Banco de dados
-
-As tabelas principais sao:
-
-- `users`: armazen a credencial (hash) e perfil basico para o workspace FluxoLab.
-- `webhook_registrations`: registros por usuario com hash dos tokens e auditoria de uso.
-- `webhook_events`: eventos recebidos (payload, headers, status, erros).
-- `conversations`: projetos/fluxos pertencentes a um usuario.
-- `activities`: timeline de eventos relevantes (auditoria, execucoes, comentarios, etc).
-
-O runner `npm run migrate` aplica os arquivos SQL em `db/migrations`.
-
-## Desenvolvimento
-
-- Logs estruturados com [pino](https://github.com/pinojs/pino); no modo local o output e formatado.
-- Limite de requisicao configuravel via `RATE_LIMIT_WINDOW_MS` e `RATE_LIMIT_MAX`.
-- Testes unitarios (exemplo em `tests/security.test.js`) executados com `npm test`.
-
-## Proximos passos sugeridos
-
-- Migrar os demais endpoints Express (auth, overview) para o NestJS ou desligar `server.js` de vez.
-- Adicionar fila de mensagens para entregar eventos a outros servicos (por exemplo BullMQ).
-- Criar painel para consultar registros e eventos armazenados.
-- Implementar reprocessamento de eventos com base na tabela `webhook_events`.
-
-## Backend NestJS (em construção)
-
-O diretório `backend/` já possui o esqueleto Nest + TypeScript com módulos de autenticação, workspace, webhooks e integração com Postgres via pool `pg`.
+Execução manual:
 
 ```bash
 cd backend
 npm install
-npm run build
 npm run start:dev
 ```
 
-### Pontos concluídos
-- Configuração global (`ConfigModule`, `nestjs-pino`, rate limiting).
-- Providers de autenticação (hash de senha, JWT, guard e strategy).
-- Repositório de usuários reutilizando as tabelas existentes.
+## Banco de dados
 
-### Próximos passos
-- Consolidar a substituição do Express removendo o fallback remanescente.
-- Adicionar testes unitários/e2e (`auth.service.spec`, `webhooks.e2e-spec`, etc.).
-- Expor health-check e documentação (Swagger).
+Migrations SQL em `db/migrations/*.sql`. O runner (`npm run migrate`) executa em ordem alfabetica e registra historico em `schema_migrations`. Os scripts utilizam `dotenv` e o logger simples de `lib/logger.js`.
 
-## Front-end Vue 3
+Tabelas principais (apos migrations):
 
-O dashboard revitalizado está em `frontend/` com Pinia, Tailwind e componentes prontos para autenticação e overview do workspace.
+- `users`, `workspaces`, `workspace_members`
+- `webhook_registrations`, `webhook_events`
+- `workflows`, `workflow_versions`, `executions`
+- `plans`, `subscriptions`, `billing_records`
+
+## Front-end (Vue 3 + Vite)
+
+Em `frontend/` estao as telas de Login, Dashboard, Settings e Workflow Builder.
+
+- Estado global com Pinia (`stores/session.store.ts`).
+- Serviços centralizados em `src/services/*.ts`.
+- Tailwind para UI, Vitest e ESLint configurados.
+
+Rodando localmente:
 
 ```bash
 cd frontend
@@ -117,10 +77,12 @@ cp .env.example .env
 npm run dev
 ```
 
-- Consumo das rotas `/api/auth/*` e `/api/workspace/overview`.
-- Visualização do fluxo com nodos e conectores usando os dados base (`flowDefinition`).
-- Proxy Vite → `http://localhost:3000` para facilitar desenvolvimento local.
+## Monitoramento
 
-Consulte `frontend/README.md` para detalhes adicionais e roadmap.
+`monitoring/prometheus.yml` aponta para os exporters padrao e coleta as metricas da API (`/api/monitoring/metrics/prometheus`). Ha diretorios auxiliares para Grafana e Logstash.
 
+## Observacoes
 
+- O servidor Express legado foi removido; toda a superficie HTTP esta centralizada em `backend/`.
+- Scripts antigos (`lib/`, `services/`, `middleware/`) permanecem apenas para tooling legado (ex.: runner de migrations) e podem ser limpos futuramente.
+- Para build front-end em pipelines existe o script `npm run cf:build`.

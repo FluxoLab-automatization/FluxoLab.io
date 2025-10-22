@@ -454,11 +454,14 @@ function getAnchorPoint(nodeRect, canvasRect, anchor) {
 
 function getBezierControls(start, end, fromAnchor, toAnchor) {
   const horizontal = Math.max(Math.abs(end.x - start.x) / 2, 60);
-  const vertical = Math.max(Math.abs(end.y - start.y) / 2, 60);
   if (fromAnchor === 'bottom' && toAnchor === 'top') {
+    const vertical = Math.max(Math.abs(end.y - start.y) / 2, 60);
     return { c1x: start.x, c1y: start.y + vertical, c2x: end.x, c2y: end.y - vertical };
   }
-  return { c1x: start.x + horizontal, c1y: start.y, c2x: end.x - horizontal, c2y: end.y };
+  // Default horizontal connection
+  const c1x = fromAnchor === 'left' ? start.x - horizontal : start.x + horizontal;
+  const c2x = toAnchor === 'right' ? end.x + horizontal : end.x - horizontal;
+  return { c1x, c1y: start.y, c2x, c2y: end.y };
 }
 
 function refreshFlowConnectors() {
@@ -692,6 +695,3 @@ function injectStyles() {
   `;
   document.head.appendChild(style);
 }
-
-
-

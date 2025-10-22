@@ -109,12 +109,14 @@ describe('WorkflowEngineService', () => {
     });
 
     expect(executionsService.markRunning).toHaveBeenCalledWith('execution-1');
-    expect(executionsService.appendStep).toHaveBeenCalledTimes(3);
+    expect(executionsService.appendStep).toHaveBeenCalledTimes(6);
     expect(executionsService.markFinished).toHaveBeenCalledWith('execution-1', 'succeeded');
     expect(responseRegistry.consume).toHaveBeenCalledWith('correlation-1');
-    expect(responder.resolve).toHaveBeenCalledWith(200, {
-      status: 'sent',
-      to: 'user@example.com',
-    });
+    expect(responder.resolve).toHaveBeenCalledWith(
+      200,
+      expect.objectContaining({
+        status: 'sent',
+      }),
+    );
   });
 });

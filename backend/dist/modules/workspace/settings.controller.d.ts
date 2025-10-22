@@ -6,6 +6,7 @@ import { WorkspaceApiKeysService } from './services/workspace-api-keys.service';
 import { WorkspaceIntegrationsService } from './services/workspace-integrations.service';
 import { UsageHistoryQueryDto } from './dto/usage-history.dto';
 import { UpgradePlanDto, CancelSubscriptionDto } from './dto/plan-management.dto';
+import { ConfigureLdapDto, ConfigureLogDestinationDto, ConfigureSsoDto, CreateApiKeyDto, CreateUsageAlertDto, UpdateEnvironmentStatusDto, UpdateProfileDto, UpdateSecuritySettingsDto } from './dto/settings-requests.dto';
 export declare class SettingsController {
     private readonly workspaceSettingsService;
     private readonly usageAnalyticsService;
@@ -26,7 +27,7 @@ export declare class SettingsController {
         status: string;
         alerts: any[];
     }>;
-    createUsageAlert(user: AuthenticatedUser, alertConfig: any): Promise<{
+    createUsageAlert(user: AuthenticatedUser, payload: CreateUsageAlertDto): Promise<{
         status: string;
         alert: any;
     }>;
@@ -64,50 +65,31 @@ export declare class SettingsController {
             communityConnectors: import("./repositories/workspace-integrations.repository").CommunityConnectorRecord[];
         };
     }>;
-    setEnvironmentStatus(user: AuthenticatedUser, environmentId: string, payload: {
-        status: 'active' | 'inactive';
-    }): Promise<{
+    setEnvironmentStatus(user: AuthenticatedUser, environmentId: string, payload: UpdateEnvironmentStatusDto): Promise<{
         status: string;
         environment: import("./repositories/workspace-environments.repository").EnvironmentRecord;
     }>;
-    configureSso(user: AuthenticatedUser, body: {
-        provider: string;
-        clientId: string;
-        clientSecret: string;
-        enabled: boolean;
-    }): Promise<{
+    configureSso(user: AuthenticatedUser, payload: ConfigureSsoDto): Promise<{
         status: string;
         message: string;
     }>;
-    configureLdap(user: AuthenticatedUser, body: {
-        host: string;
-        port: number;
-        baseDn: string;
-        bindDn: string;
-        bindPassword: string;
-        enabled: boolean;
-    }): Promise<{
+    configureLdap(user: AuthenticatedUser, payload: ConfigureLdapDto): Promise<{
         status: string;
         message: string;
     }>;
-    configureLogDestination(user: AuthenticatedUser, body: {
-        destination: string;
-        endpoint: string;
-        apiKey?: string;
-        enabled: boolean;
-    }): Promise<{
+    configureLogDestination(user: AuthenticatedUser, payload: ConfigureLogDestinationDto): Promise<{
         status: string;
         message: string;
     }>;
-    updateProfile(user: AuthenticatedUser, profileData: any): Promise<{
+    updateProfile(user: AuthenticatedUser, _profileData: UpdateProfileDto): Promise<{
         status: string;
         message: string;
     }>;
-    updateSecuritySettings(user: AuthenticatedUser, securityData: any): Promise<{
+    updateSecuritySettings(user: AuthenticatedUser, _securityData: UpdateSecuritySettingsDto): Promise<{
         status: string;
         message: string;
     }>;
-    createApiKey(user: AuthenticatedUser, keyData: any): Promise<{
+    createApiKey(user: AuthenticatedUser, payload: CreateApiKeyDto): Promise<{
         status: string;
         token: string;
         key: import("./services/workspace-api-keys.service").ApiKeySummary;

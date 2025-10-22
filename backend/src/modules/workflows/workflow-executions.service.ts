@@ -152,6 +152,43 @@ export class WorkflowExecutionsService {
     );
   }
 
+  async listExecutions(
+    workspaceId: string,
+    workflowId: string,
+    options: { limit: number; offset: number },
+  ): Promise<ExecutionWithDetails[]> {
+    const result = await this.pool.query<ExecutionRow & { trigger_event_id: string | null; correlation_id: string | null }>(
+      `
+        SELECT id,
+               workspace_id,
+               workflow_id,
+               workflow_version_id,
+               trigger_event_id,
+               correlation_id,
+               status,
+               started_at,
+               finished_at,
+               created_at
+          FROM executions
+         WHERE workspace_id = $1
+           AND workflow_id = $2
+         ORDER BY created_at DESC
+         LIMIT $3 OFFSET $4
+      `,
+      [workspaceId, workflowId, options.limit, options.offset],
+    );
+
+    return result.rows.map((row) => ({
+      id: row.id,
+      workspaceId: row.workspace_id,
+      workflowId: row.workflow_id,
+      workflowVersionId: row.workflow_version_id,
+      triggerEventId: (row as any).trigger_event_id ?? null,
+      correlationId: (row as any).correlation_id ?? null,
+      status: row.status,
+    }));
+  }
+
   async getExecution(executionId: string): Promise<ExecutionWithDetails | null> {
     const result = await this.pool.query<ExecutionRow & { trigger_event_id: string | null; correlation_id: string | null }>(
       `

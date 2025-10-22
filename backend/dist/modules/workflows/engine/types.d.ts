@@ -2,16 +2,41 @@ export interface WorkflowItem {
     json: Record<string, unknown>;
     binary?: Record<string, unknown>;
 }
+export interface WorkflowNodePortDefinition {
+    id: string;
+    kind: 'input' | 'output';
+    label?: string;
+    alignment?: 'left' | 'right' | 'top' | 'bottom';
+    icon?: string;
+}
+export interface WorkflowNodeStyleDefinition {
+    icon?: string;
+    accent?: string;
+    variant?: 'default' | 'success' | 'warning' | 'info';
+    status?: 'ready' | 'inactive' | 'error';
+}
 export interface WorkflowNodeDefinition {
     id: string;
     type: string;
     name?: string;
     params?: Record<string, unknown>;
+    position?: {
+        x: number;
+        y: number;
+    };
+    ports?: WorkflowNodePortDefinition[];
+    style?: WorkflowNodeStyleDefinition;
 }
 export interface WorkflowConnectionDefinition {
+    id?: string;
     from: string;
     to: string;
     output?: string;
+    label?: string;
+    variant?: 'solid' | 'dashed';
+    status?: 'default' | 'warning' | 'success';
+    fromPort?: string | null;
+    toPort?: string | null;
 }
 export interface WorkflowRuntimeContext {
     workspaceId: string;

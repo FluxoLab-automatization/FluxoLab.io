@@ -1,102 +1,139 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Headers,
-  Param,
-  Post,
-  Query,
-  Req,
-  Res,
-} from '@nestjs/common';
-import type { Response, Request } from 'express';
-import { GenerateWebhookDto } from './dto/generate-webhook.dto';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireWorkspaceGuard } from '../auth/require-workspace.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/auth.types';
 import { WebhooksService } from './webhooks.service';
-import { WorkflowOrchestratorService } from '../workflows/workflow-orchestrator.service';
 
-interface VerifyQuery {
-  'hub.mode'?: string;
-  'hub.verify_token'?: string;
-  'hub.challenge'?: string;
-  [key: string]: string | string[] | undefined;
-}
-
-@Controller('api')
+@Controller('api/webhooks')
 export class WebhooksController {
-  constructor(
-    private readonly webhooksService: WebhooksService,
-    private readonly orchestrator: WorkflowOrchestratorService,
-  ) {}
+  constructor(private readonly webhooksService: WebhooksService) {}
 
-  @Post('generate-webhook')
-  generateWebhook(@Body() payload: GenerateWebhookDto) {
-    return this.webhooksService.generateWebhook(payload);
-  }
-
-  @Get('webhooks/:token')
-  async verifyWebhook(
-    @Param('token') token: string,
-    @Query() query: VerifyQuery,
-    @Headers() headers: Record<string, unknown>,
-    @Res() res: Response,
+  @UseGuards(JwtAuthGuard, RequireWorkspaceGuard)
+  @Post()
+  async createWebhook(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() webhookData: any,
   ) {
-    const challenge = await this.webhooksService.verifyWebhook(
-      token,
-      query,
-      headers,
-    );
-    res.status(200).send(challenge);
-  }
-
-  @Post('webhooks/:token')
-  async receiveWebhook(
-    @Param('token') token: string,
-    @Body() body: unknown,
-    @Headers() headers: Record<string, unknown>,
-    @Req() req: Request & { rawBody?: Buffer },
-    @Res() res: Response,
-  ) {
-    let responded = false;
-    const respond = (status: number, payload: unknown) => {
-      responded = true;
-      if (res.headersSent) {
-        return;
-      }
-      if (typeof payload === 'string') {
-        res.status(status).send(payload);
-      } else {
-        res.status(status).json(payload);
-      }
+    const workspaceId = user.workspaceId as string;
+    const webhook = await this.webhooksService.createWebhook(workspaceId, {
+      ...webhookData,
+      createdBy: user.id,
+    });
+    return {
+      status: 'ok',
+      webhook,
     };
+  }
 
-    try {
-      const result = await this.orchestrator.triggerViaWebhook({
-        token,
-        method: req.method,
-        headers,
-        query: req.query as Record<string, unknown>,
-        body,
-        rawBody: req.rawBody ?? null,
-        idempotencyKey: req.header('x-idempotency-key') ?? null,
-        respond,
-      });
+  @UseGuards(JwtAuthGuard, RequireWorkspaceGuard)
+  @Get()
+  async listWebhooks(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    const workspaceId = user.workspaceId as string;
+    const webhooks = await this.webhooksService.listWebhooks(workspaceId, {
+      limit: limit ? parseInt(limit, 10) : 50,
+      offset: offset ? parseInt(offset, 10) : 0,
+    });
+    return {
+      status: 'ok',
+      webhooks,
+    };
+  }
 
-      if (!responded && !res.headersSent) {
-        respond(202, { status: 'accepted', executionId: result.executionId });
-      }
-    } catch (error) {
-      // fallback to legacy handler
-      const response = await this.webhooksService.receiveWebhook(
-        token,
-        req.method,
-        req.query as Record<string, unknown>,
-        body,
-        headers,
-        req.rawBody,
-      );
-      if (!res.headersSent) {
-        res.status(200).json(response);
-      }
-    }
+  @UseGuards(JwtAuthGuard, RequireWorkspaceGuard)
+  @Get(':webhookId')
+  async getWebhook(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('webhookId') webhookId: string,
+  ) {
+    const workspaceId = user.workspaceId as string;
+    const webhook = await this.webhooksService.getWebhook(workspaceId, webhookId);
+    return {
+      status: 'ok',
+      webhook,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard, RequireWorkspaceGuard)
+  @Put(':webhookId')
+  async updateWebhook(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('webhookId') webhookId: string,
+    @Body() webhookData: any,
+  ) {
+    const workspaceId = user.workspaceId as string;
+    const webhook = await this.webhooksService.updateWebhook(workspaceId, webhookId, webhookData);
+    return {
+      status: 'ok',
+      webhook,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard, RequireWorkspaceGuard)
+  @Delete(':webhookId')
+  async deleteWebhook(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('webhookId') webhookId: string,
+  ) {
+    const workspaceId = user.workspaceId as string;
+    await this.webhooksService.deleteWebhook(workspaceId, webhookId);
+    return {
+      status: 'ok',
+      message: 'Webhook deleted successfully',
+    };
+  }
+
+  @UseGuards(JwtAuthGuard, RequireWorkspaceGuard)
+  @Post(':webhookId/test')
+  async testWebhook(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('webhookId') webhookId: string,
+    @Body() testData: any,
+  ) {
+    const workspaceId = user.workspaceId as string;
+    const result = await this.webhooksService.testWebhook(workspaceId, webhookId, testData);
+    return {
+      status: 'ok',
+      result,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard, RequireWorkspaceGuard)
+  @Get(':webhookId/logs')
+  async getWebhookLogs(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('webhookId') webhookId: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    const workspaceId = user.workspaceId as string;
+    const logs = await this.webhooksService.getWebhookLogs(workspaceId, webhookId, {
+      limit: limit ? parseInt(limit, 10) : 50,
+      offset: offset ? parseInt(offset, 10) : 0,
+    });
+    return {
+      status: 'ok',
+      logs,
+    };
+  }
+
+  // Public endpoint for webhook execution (no auth required)
+  @Post('execute/:token')
+  async executeWebhook(
+    @Param('token') token: string,
+    @Body() payload: any,
+    @Query() query: any,
+  ) {
+    const result = await this.webhooksService.executeWebhook(token, {
+      payload,
+      query,
+      headers: {}, // TODO: Extract from request headers
+      method: 'POST', // TODO: Extract from request method
+    });
+    return result;
   }
 }

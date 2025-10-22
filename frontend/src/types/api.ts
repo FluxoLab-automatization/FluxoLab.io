@@ -28,6 +28,10 @@ export interface WorkspaceMetrics {
   totalProjects: number;
   totalWebhooks: number;
   totalEvents: number;
+  activeWorkflows: number;
+  activeUsers: number;
+  eventsInPeriod: number;
+  usagePeriodLabel: string | null;
 }
 
 export interface Project {

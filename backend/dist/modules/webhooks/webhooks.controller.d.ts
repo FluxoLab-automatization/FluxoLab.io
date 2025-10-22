@@ -1,27 +1,45 @@
-import type { Response, Request } from 'express';
-import { GenerateWebhookDto } from './dto/generate-webhook.dto';
+import type { AuthenticatedUser } from '../auth/auth.types';
 import { WebhooksService } from './webhooks.service';
-import { WorkflowOrchestratorService } from '../workflows/workflow-orchestrator.service';
-interface VerifyQuery {
-    'hub.mode'?: string;
-    'hub.verify_token'?: string;
-    'hub.challenge'?: string;
-    [key: string]: string | string[] | undefined;
-}
 export declare class WebhooksController {
     private readonly webhooksService;
-    private readonly orchestrator;
-    constructor(webhooksService: WebhooksService, orchestrator: WorkflowOrchestratorService);
-    generateWebhook(payload: GenerateWebhookDto): Promise<{
+    constructor(webhooksService: WebhooksService);
+    createWebhook(user: AuthenticatedUser, webhookData: any): Promise<{
+        status: string;
+        webhook: import("./webhooks.service").WebhookEntity;
+    }>;
+    listWebhooks(user: AuthenticatedUser, limit?: string, offset?: string): Promise<{
+        status: string;
+        webhooks: {
+            webhooks: import("./webhooks.service").WebhookEntity[];
+            total: number;
+        };
+    }>;
+    getWebhook(user: AuthenticatedUser, webhookId: string): Promise<{
+        status: string;
+        webhook: import("./webhooks.service").WebhookEntity;
+    }>;
+    updateWebhook(user: AuthenticatedUser, webhookId: string, webhookData: any): Promise<{
+        status: string;
+        webhook: import("./webhooks.service").WebhookEntity;
+    }>;
+    deleteWebhook(user: AuthenticatedUser, webhookId: string): Promise<{
         status: string;
         message: string;
-        token: string;
-        webhookUrl: string;
-        registrationId: string;
     }>;
-    verifyWebhook(token: string, query: VerifyQuery, headers: Record<string, unknown>, res: Response): Promise<void>;
-    receiveWebhook(token: string, body: unknown, headers: Record<string, unknown>, req: Request & {
-        rawBody?: Buffer;
-    }, res: Response): Promise<void>;
+    testWebhook(user: AuthenticatedUser, webhookId: string, testData: any): Promise<{
+        status: string;
+        result: {
+            success: boolean;
+            response: any;
+            executionTime: number;
+        };
+    }>;
+    getWebhookLogs(user: AuthenticatedUser, webhookId: string, limit?: string, offset?: string): Promise<{
+        status: string;
+        logs: {
+            logs: import("./webhooks.service").WebhookLog[];
+            total: number;
+        };
+    }>;
+    executeWebhook(token: string, payload: any, query: any): Promise<import("./webhooks.service").WebhookExecutionResult>;
 }
-export {};

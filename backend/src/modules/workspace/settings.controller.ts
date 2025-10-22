@@ -24,6 +24,16 @@ import { WorkspaceApiKeysService } from './services/workspace-api-keys.service';
 import { WorkspaceIntegrationsService } from './services/workspace-integrations.service';
 import { UsageHistoryQueryDto } from './dto/usage-history.dto';
 import { UpgradePlanDto, CancelSubscriptionDto } from './dto/plan-management.dto';
+import {
+  ConfigureLdapDto,
+  ConfigureLogDestinationDto,
+  ConfigureSsoDto,
+  CreateApiKeyDto,
+  CreateUsageAlertDto,
+  UpdateEnvironmentStatusDto,
+  UpdateProfileDto,
+  UpdateSecuritySettingsDto,
+} from './dto/settings-requests.dto';
 
 @Controller('api/settings')
 export class SettingsController {
@@ -94,12 +104,21 @@ export class SettingsController {
   @Post('usage/alerts')
   async createUsageAlert(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() alertConfig: any,
+    @Body() payload: CreateUsageAlertDto,
   ) {
     const workspaceId = this.requireWorkspaceId(user);
     const alert = await this.usageAnalyticsService.createUsageAlert(
       workspaceId,
-      alertConfig,
+      {
+        metric: payload.metric,
+        threshold: payload.threshold,
+        condition: payload.condition,
+        window: payload.window,
+        channel: payload.channel,
+        enabled: payload.enabled,
+        metadata: payload.metadata ?? {},
+        createdBy: user.id,
+      },
     );
     return {
       status: 'ok',
@@ -181,7 +200,7 @@ export class SettingsController {
   async setEnvironmentStatus(
     @CurrentUser() user: AuthenticatedUser,
     @Param('environmentId') environmentId: string,
-    @Body() payload: { status: 'active' | 'inactive' },
+    @Body() payload: UpdateEnvironmentStatusDto,
   ) {
     const workspaceId = this.requireWorkspaceId(user);
     const updated = await this.integrationsService.updateEnvironmentStatus({
@@ -204,21 +223,15 @@ export class SettingsController {
   @Post('sso/configure')
   async configureSso(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      provider: string;
-      clientId: string;
-      clientSecret: string;
-      enabled: boolean;
-    },
+    @Body() payload: ConfigureSsoDto,
   ) {
     const workspaceId = this.requireWorkspaceId(user);
     await this.integrationsService.configureSso({
       workspaceId,
-      provider: body.provider,
-      clientId: body.clientId,
-      clientSecret: body.clientSecret,
-      enabled: body.enabled,
+      provider: payload.provider,
+      clientId: payload.clientId,
+      clientSecret: payload.clientSecret,
+      enabled: payload.enabled,
       recordedBy: user.id,
     });
 
@@ -232,25 +245,17 @@ export class SettingsController {
   @Post('ldap/configure')
   async configureLdap(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      host: string;
-      port: number;
-      baseDn: string;
-      bindDn: string;
-      bindPassword: string;
-      enabled: boolean;
-    },
+    @Body() payload: ConfigureLdapDto,
   ) {
     const workspaceId = this.requireWorkspaceId(user);
     await this.integrationsService.configureLdap({
       workspaceId,
-      host: body.host,
-      baseDn: body.baseDn,
-      port: body.port,
-      bindDn: body.bindDn,
-      bindPassword: body.bindPassword,
-      enabled: body.enabled,
+      host: payload.host,
+      baseDn: payload.baseDn,
+      port: payload.port,
+      bindDn: payload.bindDn,
+      bindPassword: payload.bindPassword,
+      enabled: payload.enabled,
       recordedBy: user.id,
     });
 
@@ -264,21 +269,15 @@ export class SettingsController {
   @Post('logs/configure')
   async configureLogDestination(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      destination: string;
-      endpoint: string;
-      apiKey?: string;
-      enabled: boolean;
-    },
+    @Body() payload: ConfigureLogDestinationDto,
   ) {
     const workspaceId = this.requireWorkspaceId(user);
     await this.integrationsService.configureLogDestination({
       workspaceId,
-      destination: body.destination,
-      endpoint: body.endpoint,
-      apiKey: body.apiKey,
-      enabled: body.enabled,
+      destination: payload.destination,
+      endpoint: payload.endpoint,
+      apiKey: payload.apiKey,
+      enabled: payload.enabled,
       recordedBy: user.id,
     });
 
@@ -293,7 +292,7 @@ export class SettingsController {
   @Put('personal/profile')
   async updateProfile(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() profileData: any,
+    @Body() _profileData: UpdateProfileDto,
   ) {
     // Se precisar do workspace aqui também:
     // const workspaceId = this.requireWorkspaceId(user);
@@ -307,7 +306,7 @@ export class SettingsController {
   @Put('personal/security')
   async updateSecuritySettings(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() securityData: any,
+    @Body() _securityData: UpdateSecuritySettingsDto,
   ) {
     return {
       status: 'ok',
@@ -320,16 +319,16 @@ export class SettingsController {
   @Post('api/keys')
   async createApiKey(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() keyData: any,
+    @Body() payload: CreateApiKeyDto,
   ) {
     const workspaceId = this.requireWorkspaceId(user);
     const { token, key } = await this.apiKeysService.createKey({
       workspaceId,
-      label: keyData.label ?? 'Chave API',
-      scopes: Array.isArray(keyData.scopes) ? keyData.scopes : [],
+      label: payload.label ?? 'Chave API',
+      scopes: payload.scopes ?? [],
       createdBy: user.id,
-      expiresAt: keyData.expiresAt ? new Date(keyData.expiresAt) : null,
-      metadata: keyData.metadata ?? {},
+      expiresAt: payload.expiresAt ? new Date(payload.expiresAt) : null,
+      metadata: payload.metadata ?? {},
     });
     return {
       status: 'ok',

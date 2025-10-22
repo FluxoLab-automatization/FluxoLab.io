@@ -47,6 +47,8 @@ exports.envSchema = zod_1.z
     AWS_SECRET_ACCESS_KEY: zod_1.z.string().optional(),
     AWS_REGION: zod_1.z.string().default('us-east-1'),
     AWS_S3_BUCKET: zod_1.z.string().optional(),
+    WHATSAPP_SESSION_PATH: zod_1.z.string().optional(),
+    WHATSAPP_LEAD_ALERT_PHONE: zod_1.z.string().optional(),
     ENABLE_SWAGGER: zod_1.z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
     ENABLE_METRICS: zod_1.z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
     MCP_SERVER_URL: optionalUrl,

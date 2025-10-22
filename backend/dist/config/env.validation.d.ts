@@ -46,6 +46,8 @@ export declare const envSchema: z.ZodObject<{
     AWS_SECRET_ACCESS_KEY: z.ZodOptional<z.ZodString>;
     AWS_REGION: z.ZodDefault<z.ZodString>;
     AWS_S3_BUCKET: z.ZodOptional<z.ZodString>;
+    WHATSAPP_SESSION_PATH: z.ZodOptional<z.ZodString>;
+    WHATSAPP_LEAD_ALERT_PHONE: z.ZodOptional<z.ZodString>;
     ENABLE_SWAGGER: z.ZodPipe<z.ZodDefault<z.ZodEnum<{
         true: "true";
         false: "false";

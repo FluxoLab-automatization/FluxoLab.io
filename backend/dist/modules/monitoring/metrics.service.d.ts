@@ -13,6 +13,7 @@ export interface HistogramMetric {
     name: string;
     description: string;
     buckets: number[];
+    bucketCounts: number[];
     count: number;
     sum: number;
     labels: Record<string, string>;
@@ -34,7 +35,6 @@ export declare class MetricsService {
     reset(): void;
     private getMetricKey;
     private formatLabels;
-    private getBucketCount;
     recordRequest(method: string, path: string, statusCode: number, duration: number): void;
     recordWebhookEvent(eventType: string, status: string, duration: number): void;
     recordDatabaseQuery(queryType: string, duration: number): void;

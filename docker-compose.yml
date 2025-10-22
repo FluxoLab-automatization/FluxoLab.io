@@ -51,8 +51,8 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3000
-      DATABASE_URL: postgresql://fluxolab:${POSTGRES_PASSWORD:-fluxolab_dev_password}@postgres:5432/fluxolab
-      REDIS_URL: redis://:${REDIS_PASSWORD:-fluxolab_redis_password}@redis:6379
+      DATABASE_URL: postgresql://fluxolab:${POSTGRES_PASSWORD:-Saladas.2}@postgres:5432/fluxolab
+      REDIS_URL: redis://:${REDIS_PASSWORD:-Saladas.2}@redis:6379
       JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_here_change_in_production}
       TOKEN_HASH_SECRET: ${TOKEN_HASH_SECRET:-your_token_hash_secret_here}
       VERIFY_TOKEN: ${VERIFY_TOKEN:-your_verify_token_here}

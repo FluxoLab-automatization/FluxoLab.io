@@ -70,23 +70,25 @@ export const useSessionStore = defineStore('session', () => {
       return;
     }
 
+    console.log('Initializing session store...');
     const storedToken = readFromStorage<string>(TOKEN_STORAGE_KEY);
     const storedUser = readFromStorage<ApiUser>(USER_STORAGE_KEY);
+
+    console.log('Stored session data:', { 
+      hasToken: Boolean(storedToken), 
+      hasUser: Boolean(storedUser) 
+    });
 
     if (storedToken && storedUser) {
       token.value = storedToken;
       user.value = storedUser;
-      try {
-        const refreshed = await fetchCurrentUser(storedToken);
-        user.value = refreshed;
-        writeToStorage(USER_STORAGE_KEY, refreshed);
-      } catch (err) {
-        console.warn('Falha ao validar sessão armazenada:', err);
-        clearSession();
-      }
+      console.log('Session restored from storage');
+    } else {
+      console.log('No stored session found');
     }
 
     initialized.value = true;
+    console.log('Session store initialized');
   }
 
   async function login(credentials: LoginPayload) {
@@ -150,9 +152,14 @@ export const useSessionStore = defineStore('session', () => {
     }
   }
 
-  const isAuthenticated = computed(
-    () => Boolean(token.value) && Boolean(user.value),
-  );
+  function logout() {
+    console.log('Logging out user...');
+    clearSession();
+  }
+
+  const isAuthenticated = computed(() => {
+    return Boolean(token.value) && Boolean(user.value);
+  });
 
   return {
     token,
@@ -167,6 +174,7 @@ export const useSessionStore = defineStore('session', () => {
     refreshUser,
     clearSession,
     setSession,
+    logout,
   };
 });
 

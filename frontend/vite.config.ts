@@ -6,7 +6,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // Para GitHub Pages em "project page", use o nome exato do repositório:
 export default defineConfig({
-  base: '/fluxo_lab_automatizacao/',   // se for user/organization page ou domínio raiz, use '/'.
+  base: '/fluxo_lab_automatizacao/',
   plugins: [vue(), vueDevTools()],
   resolve: {
     alias: {

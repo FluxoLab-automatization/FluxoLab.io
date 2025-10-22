@@ -17,6 +17,7 @@ export interface HistogramMetric {
   name: string;
   description: string;
   buckets: number[];
+  bucketCounts: number[];
   count: number;
   sum: number;
   labels: Record<string, string>;
@@ -49,17 +50,22 @@ export class MetricsService {
   recordHistogram(name: string, value: number, labels: Record<string, string> = {}): void {
     const key = this.getMetricKey(name, labels);
     const existing = this.histograms.get(key);
-    
+
     const buckets = [0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300]; // seconds
-    
+
     if (existing) {
       existing.count += 1;
       existing.sum += value;
+      existing.bucketCounts = existing.bucketCounts.map((count, index) =>
+        value <= existing.buckets[index] ? count + 1 : count,
+      );
     } else {
+      const bucketCounts = buckets.map((boundary) => (value <= boundary ? 1 : 0));
       this.histograms.set(key, {
         name,
         description: `Histogram metric for ${name}`,
         buckets,
+        bucketCounts,
         count: 1,
         sum: value,
         labels,
@@ -108,11 +114,11 @@ export class MetricsService {
       output += `# TYPE ${histogram.name} histogram\n`;
       output += `${histogram.name}_count${labels} ${histogram.count}\n`;
       output += `${histogram.name}_sum${labels} ${histogram.sum}\n`;
-      
-      // Add bucket metrics
-      for (const bucket of histogram.buckets) {
-        output += `${histogram.name}_bucket{le="${bucket}"}${labels} ${this.getBucketCount(histogram.sum, bucket)}\n`;
-      }
+
+      histogram.buckets.forEach((bucket, index) => {
+        const cumulative = histogram.bucketCounts[index] ?? 0;
+        output += `${histogram.name}_bucket{le="${bucket}"}${labels} ${cumulative}\n`;
+      });
       output += `${histogram.name}_bucket{le="+Inf"}${labels} ${histogram.count}\n`;
     }
     
@@ -144,11 +150,6 @@ export class MetricsService {
     
     const formatted = entries.map(([key, value]) => `${key}="${value}"`).join(',');
     return `{${formatted}}`;
-  }
-
-  private getBucketCount(sum: number, bucket: number): number {
-    // Simple implementation - in real scenario, you'd track individual measurements
-    return sum <= bucket ? 1 : 0;
   }
 
   // Application-specific metrics

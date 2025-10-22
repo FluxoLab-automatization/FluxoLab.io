@@ -18,6 +18,8 @@ import { AppController } from './app.controller';
 import { LeadsModule } from './modules/leads/leads.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 import { AiModule } from './modules/ai/ai.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -107,6 +109,8 @@ import { AiModule } from './modules/ai/ai.module';
     LeadsModule,
     WhatsappModule,
     AiModule,
+    DashboardModule,
+    UsersModule,
   ],
   controllers: [AppController],
 })

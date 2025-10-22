@@ -26,6 +26,8 @@ const app_controller_1 = require("./app.controller");
 const leads_module_1 = require("./modules/leads/leads.module");
 const whatsapp_module_1 = require("./modules/whatsapp/whatsapp.module");
 const ai_module_1 = require("./modules/ai/ai.module");
+const dashboard_module_1 = require("./modules/dashboard/dashboard.module");
+const users_module_1 = require("./modules/users/users.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -110,6 +112,8 @@ exports.AppModule = AppModule = __decorate([
             leads_module_1.LeadsModule,
             whatsapp_module_1.WhatsappModule,
             ai_module_1.AiModule,
+            dashboard_module_1.DashboardModule,
+            users_module_1.UsersModule,
         ],
         controllers: [app_controller_1.AppController],
     })

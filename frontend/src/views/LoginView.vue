@@ -7,6 +7,7 @@ import {
   ref,
 } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useSessionStore } from '../stores/session.store';
 import CompanyLogo from '../assets/logo-empresa.png';
 import {
@@ -18,6 +19,7 @@ import {
 const route = useRoute();
 const router = useRouter();
 const session = useSessionStore();
+const { t } = useI18n();
 
 const mode = ref<'login' | 'register'>('login');
 const navOpen = ref(false);
@@ -405,7 +407,7 @@ onBeforeUnmount(() => {
           </p>
 
           <div class="login-hero__actions">
-            <a href="#entrar" class="login-cta">Entrar agora</a>
+            <a href="#entrar" class="login-cta">{{ t('auth.login.loginButton') }}</a>
             <a href="#recursos" class="login-cta login-cta--secondary">Explorar recursos</a>
           </div>
 
@@ -553,7 +555,7 @@ onBeforeUnmount(() => {
                 ]"
                 @click="switchMode('login')"
               >
-                Entrar
+                {{ t('auth.login.loginButton') }}
               </button>
               <button
                 type="button"
@@ -563,7 +565,7 @@ onBeforeUnmount(() => {
                 ]"
                 @click="switchMode('register')"
               >
-                Cadastrar usuário
+                {{ t('auth.register.registerButton') }}
               </button>
             </nav>
 
@@ -573,7 +575,7 @@ onBeforeUnmount(() => {
               @submit.prevent="handleSubmit"
             >
               <div class="field">
-                <label for="email">E-mail</label>
+                <label for="email">{{ t('auth.login.email') }}</label>
                 <input
                   id="email"
                   v-model.trim="email"
@@ -585,7 +587,7 @@ onBeforeUnmount(() => {
               </div>
 
               <div class="field">
-                <label for="password">Senha</label>
+                <label for="password">{{ t('auth.login.password') }}</label>
                 <input
                   id="password"
                   v-model="password"
@@ -599,7 +601,7 @@ onBeforeUnmount(() => {
               <div class="login-form__row">
                 <label class="remember">
                   <input v-model="remember" type="checkbox" />
-                  <span>Lembrar acesso</span>
+                  <span>{{ t('auth.login.rememberMe') }}</span>
                 </label>
                 <a class="forgot" href="#">Esqueci minha senha</a>
               </div>

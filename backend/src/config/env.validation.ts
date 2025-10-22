@@ -53,7 +53,11 @@ export const envSchema = z
     AWS_SECRET_ACCESS_KEY: z.string().optional(),
     AWS_REGION: z.string().default('us-east-1'),
     AWS_S3_BUCKET: z.string().optional(),
-    
+
+    // WhatsApp
+    WHATSAPP_SESSION_PATH: z.string().optional(),
+    WHATSAPP_LEAD_ALERT_PHONE: z.string().optional(),
+
     // Feature flags
     ENABLE_SWAGGER: z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
     ENABLE_METRICS: z.enum(['true', 'false']).default('true').transform(val => val === 'true'),

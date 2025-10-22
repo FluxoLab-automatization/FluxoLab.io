@@ -20,7 +20,8 @@ const workflow_engine_service_1 = require("./workflow-engine.service");
 const workflow_runner_service_1 = require("./workflow-runner.service");
 const workflow_orchestrator_service_1 = require("./workflow-orchestrator.service");
 const workflows_controller_1 = require("./workflows.controller");
-const workflow_credentials_controller_1 = require("./workflow-credentials.controller");
+const workflow_nodes_controller_1 = require("./workflow-nodes.controller");
+const workflow_nodes_service_1 = require("./workflow-nodes.service");
 const workflows_processor_1 = require("./workflows.processor");
 const workflow_queue_service_1 = require("./workflow-queue.service");
 let WorkflowsModule = class WorkflowsModule {
@@ -33,7 +34,7 @@ exports.WorkflowsModule = WorkflowsModule = __decorate([
             whatsapp_module_1.WhatsappModule,
             bull_1.BullModule.registerQueue({ name: 'workflows' }),
         ],
-        controllers: [workflows_controller_1.WorkflowsController, workflow_credentials_controller_1.WorkflowCredentialsController],
+        controllers: [workflows_controller_1.WorkflowsController, workflow_nodes_controller_1.WorkflowNodesController],
         providers: [
             workflows_service_1.WorkflowsService,
             workflow_credentials_service_1.WorkflowCredentialsService,
@@ -45,6 +46,7 @@ exports.WorkflowsModule = WorkflowsModule = __decorate([
             workflow_orchestrator_service_1.WorkflowOrchestratorService,
             workflow_queue_service_1.WorkflowQueueService,
             workflows_processor_1.WorkflowsProcessor,
+            workflow_nodes_service_1.WorkflowNodesService,
         ],
         exports: [
             workflows_service_1.WorkflowsService,
@@ -56,6 +58,7 @@ exports.WorkflowsModule = WorkflowsModule = __decorate([
             workflow_runner_service_1.WorkflowRunnerService,
             workflow_orchestrator_service_1.WorkflowOrchestratorService,
             workflow_queue_service_1.WorkflowQueueService,
+            workflow_nodes_service_1.WorkflowNodesService,
         ],
     })
 ], WorkflowsModule);

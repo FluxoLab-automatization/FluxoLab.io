@@ -1,28 +1,21 @@
 {
-  "name": "webhooks_api",
+  "name": "fluxolab-platform",
   "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
+  "description": "Monorepo da plataforma FluxoLab (backend NestJS, frontend Vue e ferramentas de banco).",
   "scripts": {
-    "start": "node server.js",
+    "start": "npm run start --prefix backend",
+    "start:dev": "npm run start:dev --prefix backend",
+    "build": "npm run build --prefix backend",
     "migrate": "node db/migrate.js",
-    "test": "node --test",
+    "test": "npm run test --prefix backend",
+    "lint": "npm run lint --prefix backend",
     "cf:build": "npm ci --prefix frontend && npm run build --prefix frontend"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.12.2",
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^5.1.0",
-    "express-rate-limit": "^7.3.0",
-    "jsonwebtoken": "^9.0.2",
     "pg": "^8.12.0",
     "pino": "^9.1.0",
-    "pino-pretty": "^11.2.2",
-    "zod": "^3.23.8"
+    "pino-pretty": "^11.2.2"
   }
 }

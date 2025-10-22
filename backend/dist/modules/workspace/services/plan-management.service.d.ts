@@ -5,6 +5,8 @@ export declare class PlanManagementService {
     private readonly logger;
     constructor(database: DatabaseService);
     getAvailablePlans(): Promise<AvailablePlan[]>;
+    private normalizeFeatures;
+    private normalizeLimit;
     upgradePlan(workspaceId: string, upgradeData: UpgradePlanDto): Promise<PlanUpgradeResponse>;
     cancelSubscription(workspaceId: string, cancelData: CancelSubscriptionDto): Promise<{
         success: boolean;

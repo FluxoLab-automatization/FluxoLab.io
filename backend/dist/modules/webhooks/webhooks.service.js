@@ -8,374 +8,298 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var WebhooksService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebhooksService = void 0;
 const common_1 = require("@nestjs/common");
-const config_1 = require("@nestjs/config");
-const nestjs_pino_1 = require("nestjs-pino");
+const database_service_1 = require("../../shared/database/database.service");
 const crypto_1 = require("crypto");
-const security_service_1 = require("../../shared/security/security.service");
-const workflow_webhook_service_1 = require("../workflows/workflow-webhook.service");
-function isMetaEventPayload(value) {
-    if (!value || typeof value !== 'object') {
-        return false;
+let WebhooksService = class WebhooksService {
+    database;
+    constructor(database) {
+        this.database = database;
     }
-    const candidate = value;
-    if (candidate.entry && !Array.isArray(candidate.entry)) {
-        return false;
+    get pool() {
+        return this.database.getPool();
     }
-    if (candidate.entry) {
-        const entries = candidate.entry;
-        if (!entries.every((entry) => entry && typeof entry === 'object')) {
-            return false;
-        }
-    }
-    return true;
-}
-let WebhooksService = WebhooksService_1 = class WebhooksService {
-    webhookService;
-    securityService;
-    config;
-    logger;
-    baseUrl;
-    receivingBasePath;
-    verifyToken;
-    appSecret;
-    constructor(webhookService, securityService, config, logger) {
-        this.webhookService = webhookService;
-        this.securityService = securityService;
-        this.config = config;
-        this.logger = logger;
-        this.logger.setContext(WebhooksService_1.name);
-        const port = this.config.get('PORT', { infer: true });
-        this.baseUrl =
-            this.config.get('BASE_URL', { infer: true }) ??
-                `http://localhost:${port}`;
-        this.receivingBasePath = this.securityService.ensureLeadingSlash(this.config.get('RECEIVING_BASE_PATH', { infer: true }));
-        this.verifyToken = this.config.get('VERIFY_TOKEN', { infer: true });
-        this.appSecret = this.config.get('APP_SECRET', { infer: true }) ?? '';
-    }
-    async generateWebhook(dto) {
-        const token = (0, crypto_1.randomBytes)(24).toString('hex');
-        const relativePathCandidate = this.normalizeRelativePath(dto.path);
-        const relativePath = relativePathCandidate.length > 0 ? relativePathCandidate : token;
-        const routePath = this.buildRoutePath(relativePath);
-        const registration = await this.webhookService.registerWebhook({
-            workspaceId: dto.workspaceId,
-            workflowId: dto.workflowId,
+    async createWebhook(workspaceId, webhookData) {
+        const token = this.generateWebhookToken();
+        const result = await this.pool.query(`
+      INSERT INTO webhooks (
+        workspace_id,
+        name,
+        path,
+        method,
+        authentication,
+        respond_mode,
+        workflow_id,
+        is_active,
+        token,
+        created_by,
+        updated_by
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8, $9, $9)
+      RETURNING 
+        id, workspace_id, name, path, method, authentication, 
+        respond_mode, workflow_id, is_active, token, created_at, updated_at
+    `, [
+            workspaceId,
+            webhookData.name,
+            webhookData.path,
+            webhookData.method,
+            webhookData.authentication,
+            webhookData.respondMode,
+            webhookData.workflowId || null,
             token,
-            path: routePath,
-            method: dto.method ?? 'POST',
-            respondMode: dto.respondMode ?? 'via_node',
-            createdBy: dto.userId ?? null,
-            description: dto.description ?? null,
-        });
-        const webhookUrl = `${this.baseUrl}${routePath}`;
-        this.logger.info({
-            registrationId: registration.id,
-            workspaceId: dto.workspaceId,
-            workflowId: dto.workflowId,
-            token: this.securityService.maskToken(token),
-        }, 'Webhook token generated');
-        return {
-            status: 'generated',
-            message: 'Webhook URL generated successfully.',
-            token,
-            webhookUrl,
-            registrationId: registration.id,
-        };
+            webhookData.createdBy,
+        ]);
+        return this.mapWebhook(result.rows[0]);
     }
-    async verifyWebhook(token, query, headers) {
-        const registration = await this.requireRegistration(token);
-        const snapshotHeaders = this.headerSnapshot(headers);
-        const normalizedQuery = this.normalizeQuery(query);
-        const mode = typeof query['hub.mode'] === 'string' ? query['hub.mode'] : undefined;
-        const verifyTokenQuery = typeof query['hub.verify_token'] === 'string'
-            ? query['hub.verify_token']
-            : undefined;
-        const challenge = typeof query['hub.challenge'] === 'string'
-            ? query['hub.challenge']
-            : undefined;
-        if (!mode || !verifyTokenQuery) {
-            throw new common_1.BadRequestException({
-                status: 'error',
-                message: 'Missing hub.mode or hub.verify_token',
-            });
-        }
-        if (mode === 'subscribe' && verifyTokenQuery === this.verifyToken) {
-            await this.webhookService.recordEvent({
-                workspaceId: registration.workspaceId,
-                webhookId: registration.id,
-                correlationId: (0, crypto_1.randomUUID)(),
-                method: 'GET',
-                headers: snapshotHeaders,
-                query: normalizedQuery,
-                body: { mode, query: normalizedQuery },
-                rawBody: null,
-                signature: null,
-                idempotencyKey: null,
-                status: 'processed',
-            });
-            this.logger.info({
-                registrationId: registration.id,
-                token: this.securityService.maskToken(token),
-            }, 'Webhook verification accepted');
-            return challenge ?? 'verified';
-        }
-        await this.webhookService.recordEvent({
-            workspaceId: registration.workspaceId,
-            webhookId: registration.id,
-            correlationId: (0, crypto_1.randomUUID)(),
-            method: 'GET',
-            headers: snapshotHeaders,
-            query: normalizedQuery,
-            body: { mode, query: normalizedQuery },
-            rawBody: null,
-            signature: null,
-            idempotencyKey: null,
-            status: 'failed',
-        });
-        this.logger.warn({
-            registrationId: registration.id,
-            token: this.securityService.maskToken(token),
-        }, 'Webhook verification rejected (verify token mismatch)');
-        throw new common_1.ForbiddenException({
-            status: 'error',
-            message: 'verify_token_mismatch',
-        });
+    async listWebhooks(workspaceId, options) {
+        const countResult = await this.pool.query(`
+      SELECT COUNT(*) as total
+      FROM webhooks
+      WHERE workspace_id = $1 AND deleted_at IS NULL
+    `, [workspaceId]);
+        const total = parseInt(countResult.rows[0].total);
+        const webhooksResult = await this.pool.query(`
+      SELECT 
+        id, workspace_id, name, path, method, authentication,
+        respond_mode, workflow_id, is_active, token, created_at, updated_at
+      FROM webhooks
+      WHERE workspace_id = $1 AND deleted_at IS NULL
+      ORDER BY created_at DESC
+      LIMIT $2 OFFSET $3
+    `, [workspaceId, options.limit, options.offset]);
+        const webhooks = webhooksResult.rows.map(row => this.mapWebhook(row));
+        return { webhooks, total };
     }
-    async receiveWebhook(token, method, query, body, headers, rawBody) {
-        const registration = await this.requireRegistration(token);
-        const snapshotHeaders = this.headerSnapshot(headers);
-        const signatureCheck = this.verifyMetaSignature(headers, rawBody);
-        const correlationId = (0, crypto_1.randomUUID)();
-        const normalizedQuery = this.normalizeQuery(query);
-        if (!signatureCheck.valid) {
-            await this.webhookService.recordEvent({
-                workspaceId: registration.workspaceId,
-                webhookId: registration.id,
-                correlationId,
-                method,
-                headers: snapshotHeaders,
-                query: normalizedQuery,
-                body,
-                rawBody: rawBody ?? null,
-                signature: signatureCheck.signature ?? null,
-                idempotencyKey: null,
-                status: 'failed',
-            });
-            this.logger.warn({
-                registrationId: registration.id,
-                token: this.securityService.maskToken(token),
-                reason: signatureCheck.reason,
-            }, 'Rejected event due to invalid signature');
-            throw new common_1.UnauthorizedException({
-                status: 'error',
-                message: 'Invalid signature.',
-            });
+    async getWebhook(workspaceId, webhookId) {
+        const result = await this.pool.query(`
+      SELECT 
+        id, workspace_id, name, path, method, authentication,
+        respond_mode, workflow_id, is_active, token, created_at, updated_at
+      FROM webhooks
+      WHERE id = $1 AND workspace_id = $2 AND deleted_at IS NULL
+    `, [webhookId, workspaceId]);
+        const row = result.rows[0];
+        if (!row) {
+            throw new common_1.NotFoundException('Webhook not found');
         }
-        const contentType = (typeof headers['content-type'] === 'string' &&
-            headers['content-type']) ||
-            '';
-        if (!contentType.includes('application/json')) {
-            await this.webhookService.recordEvent({
-                workspaceId: registration.workspaceId,
-                webhookId: registration.id,
-                correlationId,
-                method,
-                headers: snapshotHeaders,
-                query: normalizedQuery,
-                body: null,
-                rawBody: null,
-                signature: signatureCheck.signature ?? null,
-                idempotencyKey: null,
-                status: 'failed',
-            });
-            throw new common_1.BadRequestException({
-                status: 'error',
-                message: 'Content-Type must be application/json.',
-            });
-        }
-        const eventId = await this.webhookService.recordEvent({
-            workspaceId: registration.workspaceId,
-            webhookId: registration.id,
-            correlationId,
-            method,
-            headers: snapshotHeaders,
-            query: normalizedQuery,
-            body,
-            rawBody: rawBody ?? null,
-            signature: signatureCheck.signature ?? null,
-            idempotencyKey: null,
-            status: 'received',
+        return this.mapWebhook(row);
+    }
+    async updateWebhook(workspaceId, webhookId, updates) {
+        const setClauses = [];
+        const values = [webhookId, workspaceId];
+        let paramIndex = 3;
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value !== undefined) {
+                setClauses.push(`${key} = $${paramIndex++}`);
+                values.push(value);
+            }
         });
+        if (setClauses.length === 0) {
+            return this.getWebhook(workspaceId, webhookId);
+        }
+        setClauses.push('updated_at = NOW()');
+        const result = await this.pool.query(`
+      UPDATE webhooks
+      SET ${setClauses.join(', ')}
+      WHERE id = $1 AND workspace_id = $2 AND deleted_at IS NULL
+      RETURNING 
+        id, workspace_id, name, path, method, authentication,
+        respond_mode, workflow_id, is_active, token, created_at, updated_at
+    `, values);
+        const row = result.rows[0];
+        if (!row) {
+            throw new common_1.NotFoundException('Webhook not found');
+        }
+        return this.mapWebhook(row);
+    }
+    async deleteWebhook(workspaceId, webhookId) {
+        const result = await this.pool.query(`
+      UPDATE webhooks
+      SET deleted_at = NOW(), updated_at = NOW()
+      WHERE id = $1 AND workspace_id = $2 AND deleted_at IS NULL
+    `, [webhookId, workspaceId]);
+        if (result.rowCount === 0) {
+            throw new common_1.NotFoundException('Webhook not found');
+        }
+    }
+    async testWebhook(workspaceId, webhookId, testData) {
+        const webhook = await this.getWebhook(workspaceId, webhookId);
+        const startTime = Date.now();
         try {
-            const processing = this.buildProcessingSummary(registration, body);
-            await this.webhookService.updateEventStatus(eventId, 'processed');
-            return {
+            const response = {
                 status: 'success',
-                message: 'Event received and stored successfully.',
-                eventId,
-                processing,
+                message: 'Webhook test executed successfully',
+                data: testData,
+                timestamp: new Date().toISOString(),
             };
-        }
-        catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'processing_failed';
-            await this.webhookService.updateEventStatus(eventId, 'failed');
-            this.logger.error({
-                registrationId: registration.id,
-                error: error instanceof Error
-                    ? { message: error.message, name: error.name }
-                    : { value: String(error) },
-            }, 'Failed to process webhook event');
-            throw new common_1.InternalServerErrorException({
-                status: 'error',
-                message: 'Failed to process webhook event.',
+            const executionTime = Date.now() - startTime;
+            await this.logWebhookExecution(webhookId, {
+                method: 'POST',
+                path: webhook.path,
+                headers: {},
+                query: {},
+                payload: testData,
+                responseStatus: 200,
+                responseBody: response,
+                executionTime,
             });
-        }
-    }
-    async requireRegistration(token) {
-        try {
-            return await this.webhookService.getRegistrationByToken(token);
-        }
-        catch (error) {
-            if (error instanceof common_1.NotFoundException) {
-                this.logger.warn({ token: this.securityService.maskToken(token) }, 'Webhook token not found or inactive');
-            }
-            throw error instanceof common_1.NotFoundException
-                ? error
-                : new common_1.NotFoundException({
-                    status: 'error',
-                    message: 'Webhook token not found or inactive.',
-                });
-        }
-    }
-    verifyMetaSignature(headers, rawBody) {
-        if (!this.appSecret) {
-            return { valid: true, reason: 'app_secret_not_configured', signature: null };
-        }
-        const signatureHeader = this.extractSignatureHeader(headers);
-        if (!signatureHeader) {
-            return { valid: false, reason: 'missing_signature', signature: null };
-        }
-        const [scheme, providedHash] = signatureHeader.split('=');
-        if (scheme !== 'sha256' || !providedHash) {
             return {
-                valid: false,
-                reason: 'invalid_signature_format',
-                signature: signatureHeader,
-            };
-        }
-        const expected = (0, crypto_1.createHmac)('sha256', this.appSecret)
-            .update(rawBody ?? Buffer.alloc(0))
-            .digest('hex');
-        if (providedHash.length !== expected.length) {
-            return {
-                valid: false,
-                reason: 'length_mismatch',
-                signature: signatureHeader,
-            };
-        }
-        try {
-            const providedBuffer = Buffer.from(providedHash, 'hex');
-            const expectedBuffer = Buffer.from(expected, 'hex');
-            const valid = (0, crypto_1.timingSafeEqual)(providedBuffer, expectedBuffer);
-            return {
-                valid,
-                reason: valid ? 'matched' : 'mismatch',
-                signature: signatureHeader,
+                success: true,
+                response,
+                executionTime,
             };
         }
         catch (error) {
-            this.logger.warn({
-                error: error instanceof Error
-                    ? { message: error.message, name: error.name }
-                    : { value: String(error) },
-            }, 'Failed to compare webhook signature');
+            const executionTime = Date.now() - startTime;
+            await this.logWebhookExecution(webhookId, {
+                method: 'POST',
+                path: webhook.path,
+                headers: {},
+                query: {},
+                payload: testData,
+                responseStatus: 500,
+                responseBody: { error: error instanceof Error ? error.message : 'Unknown error' },
+                executionTime,
+            });
             return {
-                valid: false,
-                reason: 'comparison_failed',
-                signature: signatureHeader,
+                success: false,
+                response: { error: error instanceof Error ? error.message : 'Unknown error' },
+                executionTime,
             };
         }
     }
-    buildProcessingSummary(registration, eventData) {
-        const receivedType = this.extractEventType(eventData);
+    async executeWebhook(token, requestData) {
+        const result = await this.pool.query(`
+      SELECT 
+        id, workspace_id, name, path, method, authentication,
+        respond_mode, workflow_id, is_active
+      FROM webhooks
+      WHERE token = $1 AND is_active = true AND deleted_at IS NULL
+    `, [token]);
+        const webhook = result.rows[0];
+        if (!webhook) {
+            return {
+                success: false,
+                status: 404,
+                body: { error: 'Webhook not found' },
+            };
+        }
+        const startTime = Date.now();
+        try {
+            const executionTime = Date.now() - startTime;
+            await this.logWebhookExecution(webhook.id, {
+                method: requestData.method,
+                path: webhook.path,
+                headers: requestData.headers,
+                query: requestData.query,
+                payload: requestData.payload,
+                responseStatus: 200,
+                responseBody: { success: true, message: 'Webhook executed successfully' },
+                executionTime,
+            });
+            return {
+                success: true,
+                status: 200,
+                body: { success: true, message: 'Webhook executed successfully' },
+                executionId: webhook.id,
+            };
+        }
+        catch (error) {
+            const executionTime = Date.now() - startTime;
+            await this.logWebhookExecution(webhook.id, {
+                method: requestData.method,
+                path: webhook.path,
+                headers: requestData.headers,
+                query: requestData.query,
+                payload: requestData.payload,
+                responseStatus: 500,
+                responseBody: { error: error instanceof Error ? error.message : 'Unknown error' },
+                executionTime,
+            });
+            return {
+                success: false,
+                status: 500,
+                body: { error: error instanceof Error ? error.message : 'Unknown error' },
+            };
+        }
+    }
+    async getWebhookLogs(workspaceId, webhookId, options) {
+        await this.getWebhook(workspaceId, webhookId);
+        const countResult = await this.pool.query(`
+      SELECT COUNT(*) as total
+      FROM webhook_logs
+      WHERE webhook_id = $1
+    `, [webhookId]);
+        const total = parseInt(countResult.rows[0].total);
+        const logsResult = await this.pool.query(`
+      SELECT 
+        id, webhook_id, method, path, headers, query, payload,
+        response_status, response_body, execution_time, created_at
+      FROM webhook_logs
+      WHERE webhook_id = $1
+      ORDER BY created_at DESC
+      LIMIT $2 OFFSET $3
+    `, [webhookId, options.limit, options.offset]);
+        const logs = logsResult.rows.map(row => ({
+            id: row.id,
+            webhookId: row.webhook_id,
+            method: row.method,
+            path: row.path,
+            headers: row.headers,
+            query: row.query,
+            payload: row.payload,
+            responseStatus: row.response_status,
+            responseBody: row.response_body,
+            executionTime: row.execution_time,
+            createdAt: row.created_at,
+        }));
+        return { logs, total };
+    }
+    async logWebhookExecution(webhookId, logData) {
+        await this.pool.query(`
+      INSERT INTO webhook_logs (
+        webhook_id, method, path, headers, query, payload,
+        response_status, response_body, execution_time
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `, [
+            webhookId,
+            logData.method,
+            logData.path,
+            JSON.stringify(logData.headers),
+            JSON.stringify(logData.query),
+            JSON.stringify(logData.payload),
+            logData.responseStatus,
+            JSON.stringify(logData.responseBody),
+            logData.executionTime,
+        ]);
+    }
+    generateWebhookToken() {
+        return (0, crypto_1.randomBytes)(32).toString('hex');
+    }
+    mapWebhook(row) {
         return {
-            routeTo: registration.workflowId,
-            workspaceId: registration.workspaceId,
-            receivedType,
-            respondMode: registration.respondMode,
-            instruction: 'Payload stored and ready for workflow execution via orchestrator.',
-            payloadSize: Buffer.byteLength(JSON.stringify(eventData ?? {}), 'utf8'),
+            id: row.id,
+            workspaceId: row.workspace_id,
+            name: row.name,
+            path: row.path,
+            method: row.method,
+            authentication: row.authentication,
+            respondMode: row.respond_mode,
+            workflowId: row.workflow_id,
+            isActive: row.is_active,
+            token: row.token,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
         };
-    }
-    extractEventType(eventData) {
-        if (isMetaEventPayload(eventData) && Array.isArray(eventData.entry)) {
-            for (const entry of eventData.entry) {
-                if (!entry || !Array.isArray(entry.changes)) {
-                    continue;
-                }
-                const changeWithField = entry.changes.find((change) => change && typeof change.field === 'string');
-                if (changeWithField?.field) {
-                    return changeWithField.field;
-                }
-            }
-        }
-        if (eventData && typeof eventData === 'object' && 'event' in eventData) {
-            const eventField = eventData.event;
-            if (typeof eventField === 'string') {
-                return eventField;
-            }
-        }
-        return 'unknown';
-    }
-    normalizeQuery(query) {
-        const normalized = {};
-        for (const [key, value] of Object.entries(query ?? {})) {
-            if (Array.isArray(value)) {
-                normalized[key] = value;
-            }
-            else if (value !== undefined) {
-                normalized[key] = value;
-            }
-        }
-        return normalized;
-    }
-    extractSignatureHeader(headers) {
-        const lower = Object.entries(headers ?? {}).reduce((acc, [key, value]) => {
-            if (typeof value === 'string') {
-                acc[key.toLowerCase()] = value;
-            }
-            return acc;
-        }, {});
-        return lower['x-hub-signature-256'] ?? null;
-    }
-    normalizeRelativePath(path) {
-        if (!path) {
-            return '';
-        }
-        return path.trim().replace(/^\/+/, '').replace(/\/+$/, '');
-    }
-    buildRoutePath(relative) {
-        const combined = `${this.receivingBasePath}/${relative}`.replace(/\/{2,}/g, '/');
-        return combined.endsWith('/') && combined !== '/' ? combined.slice(0, -1) : combined;
-    }
-    headerSnapshot(headers) {
-        const snapshot = {};
-        for (const [key, value] of Object.entries(headers ?? {})) {
-            snapshot[key.toLowerCase()] = value;
-        }
-        return snapshot;
     }
 };
 exports.WebhooksService = WebhooksService;
-exports.WebhooksService = WebhooksService = WebhooksService_1 = __decorate([
+exports.WebhooksService = WebhooksService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [workflow_webhook_service_1.WorkflowWebhookService,
-        security_service_1.SecurityService,
-        config_1.ConfigService,
-        nestjs_pino_1.PinoLogger])
+    __metadata("design:paramtypes", [database_service_1.DatabaseService])
 ], WebhooksService);
 //# sourceMappingURL=webhooks.service.js.map
