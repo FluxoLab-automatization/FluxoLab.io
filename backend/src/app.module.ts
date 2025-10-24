@@ -11,6 +11,7 @@ import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { DatabaseModule } from './shared/database/database.module';
 import { SecurityModule } from './shared/security/security.module';
+import { MailModule } from './shared/mail/mail.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { McpModule } from './modules/mcp/mcp.module';
 import { WorkflowsModule } from './modules/workflows/workflows.module';
@@ -20,6 +21,14 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 import { AiModule } from './modules/ai/ai.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { UsersModule } from './modules/users/users.module';
+import { VariablesModule } from './modules/variables/variables.module';
+import { TagsModule } from './modules/tags/tags.module';
+import { AiChatModule } from './modules/ai-chat/ai-chat.module';
+import { SupportModule } from './modules/support/support.module';
+import { ProjectSharingModule } from './modules/project-sharing/project-sharing.module';
+import { EngineModule } from './modules/engine/engine.module';
+import { ConnectorsModule } from './modules/connectors/connectors.module';
+import { TemplatesModule } from './modules/templates/templates.module';
 
 @Module({
   imports: [
@@ -100,6 +109,7 @@ import { UsersModule } from './modules/users/users.module';
     }),
     DatabaseModule,
     SecurityModule,
+    MailModule,
     AuthModule,
     WorkspaceModule,
     WebhooksModule,
@@ -111,6 +121,14 @@ import { UsersModule } from './modules/users/users.module';
     AiModule,
     DashboardModule,
     UsersModule,
+    VariablesModule,
+    TagsModule,
+    AiChatModule,
+    SupportModule,
+    ProjectSharingModule,
+    EngineModule,
+    ConnectorsModule,
+    TemplatesModule,
   ],
   controllers: [AppController],
 })

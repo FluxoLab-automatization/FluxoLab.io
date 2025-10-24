@@ -372,3 +372,4 @@ The APIs use the following main tables:
 - Input validation and sanitization on all endpoints
 - Rate limiting to prevent abuse
 - CORS configured for frontend domain
+

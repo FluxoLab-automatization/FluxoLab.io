@@ -13,8 +13,11 @@ const passport_1 = require("@nestjs/passport");
 const config_1 = require("@nestjs/config");
 const password_service_1 = require("../../shared/auth/password.service");
 const token_service_1 = require("../../shared/auth/token.service");
+const mail_module_1 = require("../../shared/mail/mail.module");
 const auth_controller_1 = require("./auth.controller");
 const auth_service_1 = require("./auth.service");
+const password_reset_controller_1 = require("./password-reset.controller");
+const password_reset_service_1 = require("./password-reset.service");
 const jwt_auth_guard_1 = require("./jwt-auth.guard");
 const require_workspace_guard_1 = require("./require-workspace.guard");
 const jwt_strategy_1 = require("./jwt.strategy");
@@ -39,11 +42,13 @@ exports.AuthModule = AuthModule = __decorate([
                     },
                 }),
             }),
+            mail_module_1.MailModule,
             (0, common_1.forwardRef)(() => workspace_module_1.WorkspaceModule),
         ],
-        controllers: [auth_controller_1.AuthController],
+        controllers: [auth_controller_1.AuthController, password_reset_controller_1.PasswordResetController],
         providers: [
             auth_service_1.AuthService,
+            password_reset_service_1.PasswordResetService,
             users_repository_1.UsersRepository,
             profiles_repository_1.ProfilesRepository,
             password_service_1.PasswordService,
@@ -56,6 +61,7 @@ exports.AuthModule = AuthModule = __decorate([
         ],
         exports: [
             auth_service_1.AuthService,
+            password_reset_service_1.PasswordResetService,
             jwt_auth_guard_1.JwtAuthGuard,
             require_workspace_guard_1.RequireWorkspaceGuard,
             users_repository_1.UsersRepository,

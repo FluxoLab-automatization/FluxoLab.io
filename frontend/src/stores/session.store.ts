@@ -5,8 +5,14 @@ import {
   fetchCurrentUser,
   login as loginRequest,
   register as registerRequest,
+  forgotPassword as forgotPasswordRequest,
+  verifyResetCode as verifyResetCodeRequest,
+  resetPassword as resetPasswordRequest,
   type LoginPayload,
   type RegisterPayload,
+  type ForgotPasswordPayload,
+  type VerifyResetCodePayload,
+  type ResetPasswordPayload,
 } from '../services/auth.service';
 import { ApiError } from '../services/api';
 
@@ -50,6 +56,7 @@ export const useSessionStore = defineStore('session', () => {
   const loading = ref(false);
   const initialized = ref(false);
   const error = ref<string | null>(null);
+  const resetToken = ref<string | null>(null);
 
   function setSession(newToken: string, newUser: ApiUser) {
     token.value = newToken;
@@ -74,9 +81,9 @@ export const useSessionStore = defineStore('session', () => {
     const storedToken = readFromStorage<string>(TOKEN_STORAGE_KEY);
     const storedUser = readFromStorage<ApiUser>(USER_STORAGE_KEY);
 
-    console.log('Stored session data:', { 
-      hasToken: Boolean(storedToken), 
-      hasUser: Boolean(storedUser) 
+    console.log('Stored session data:', {
+      hasToken: Boolean(storedToken),
+      hasUser: Boolean(storedUser)
     });
 
     if (storedToken && storedUser) {
@@ -157,6 +164,66 @@ export const useSessionStore = defineStore('session', () => {
     clearSession();
   }
 
+  async function forgotPassword(payload: ForgotPasswordPayload) {
+    loading.value = true;
+    error.value = null;
+    try {
+      await forgotPasswordRequest(payload);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        error.value = err.message;
+      } else if (err instanceof Error) {
+        error.value = err.message;
+      } else {
+        error.value = 'Erro ao solicitar reset de senha.';
+      }
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function verifyResetCode(payload: VerifyResetCodePayload) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await verifyResetCodeRequest(payload);
+      resetToken.value = response.resetToken;
+      return response.resetToken;
+    } catch (err) {
+      if (err instanceof ApiError) {
+        error.value = err.message;
+      } else if (err instanceof Error) {
+        error.value = err.message;
+      } else {
+        error.value = 'Erro ao verificar código.';
+      }
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function resetPassword(payload: ResetPasswordPayload) {
+    loading.value = true;
+    error.value = null;
+    try {
+      await resetPasswordRequest(payload);
+      resetToken.value = null; // Limpar token após uso
+    } catch (err) {
+      if (err instanceof ApiError) {
+        error.value = err.message;
+      } else if (err instanceof Error) {
+        error.value = err.message;
+      } else {
+        error.value = 'Erro ao alterar senha.';
+      }
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   const isAuthenticated = computed(() => {
     return Boolean(token.value) && Boolean(user.value);
   });
@@ -167,6 +234,7 @@ export const useSessionStore = defineStore('session', () => {
     loading,
     error,
     initialized,
+    resetToken,
     isAuthenticated,
     initialize,
     login,
@@ -175,6 +243,9 @@ export const useSessionStore = defineStore('session', () => {
     clearSession,
     setSession,
     logout,
+    forgotPassword,
+    verifyResetCode,
+    resetPassword,
   };
 });
 

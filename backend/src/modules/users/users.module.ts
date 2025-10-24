@@ -10,3 +10,4 @@ import { DatabaseModule } from '../../shared/database/database.module';
   exports: [UsersService],
 })
 export class UsersModule {}
+

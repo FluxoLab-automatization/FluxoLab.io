@@ -17,6 +17,12 @@ const router = createRouter({
       meta: { guest: true },
     },
     {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: () => import('../views/ResetPasswordView.vue'),
+      meta: { guest: true },
+    },
+    {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('../views/DashboardView.vue'),
@@ -63,7 +69,7 @@ let bootstrapPromise: Promise<void> | null = null;
 
 router.beforeEach(async (to) => {
   console.log('Router guard: navigating to', to.name, to.path);
-  
+
   const session = useSessionStore();
 
   if (!session.initialized) {
@@ -73,8 +79,8 @@ router.beforeEach(async (to) => {
     bootstrapPromise = null;
   }
 
-  console.log('Session state:', { 
-    isAuthenticated: session.isAuthenticated, 
+  console.log('Session state:', {
+    isAuthenticated: session.isAuthenticated,
     hasToken: Boolean(session.token),
     hasUser: Boolean(session.user)
   });

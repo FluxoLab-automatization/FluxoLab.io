@@ -5,8 +5,11 @@ import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../../config/env.validation';
 import { PasswordService } from '../../shared/auth/password.service';
 import { TokenService } from '../../shared/auth/token.service';
+import { MailModule } from '../../shared/mail/mail.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { PasswordResetController } from './password-reset.controller';
+import { PasswordResetService } from './password-reset.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RequireWorkspaceGuard } from './require-workspace.guard';
 import { JwtStrategy } from './jwt.strategy';
@@ -28,11 +31,13 @@ import { WorkspaceModule } from '../workspace/workspace.module';
         },
       }),
     }),
+    MailModule,
     forwardRef(() => WorkspaceModule),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, PasswordResetController],
   providers: [
     AuthService,
+    PasswordResetService,
     UsersRepository,
     ProfilesRepository,
     PasswordService,
@@ -45,6 +50,7 @@ import { WorkspaceModule } from '../workspace/workspace.module';
   ],
   exports: [
     AuthService,
+    PasswordResetService,
     JwtAuthGuard,
     RequireWorkspaceGuard,
     UsersRepository,

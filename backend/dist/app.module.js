@@ -19,6 +19,7 @@ const workspace_module_1 = require("./modules/workspace/workspace.module");
 const webhooks_module_1 = require("./modules/webhooks/webhooks.module");
 const database_module_1 = require("./shared/database/database.module");
 const security_module_1 = require("./shared/security/security.module");
+const mail_module_1 = require("./shared/mail/mail.module");
 const monitoring_module_1 = require("./modules/monitoring/monitoring.module");
 const mcp_module_1 = require("./modules/mcp/mcp.module");
 const workflows_module_1 = require("./modules/workflows/workflows.module");
@@ -28,6 +29,14 @@ const whatsapp_module_1 = require("./modules/whatsapp/whatsapp.module");
 const ai_module_1 = require("./modules/ai/ai.module");
 const dashboard_module_1 = require("./modules/dashboard/dashboard.module");
 const users_module_1 = require("./modules/users/users.module");
+const variables_module_1 = require("./modules/variables/variables.module");
+const tags_module_1 = require("./modules/tags/tags.module");
+const ai_chat_module_1 = require("./modules/ai-chat/ai-chat.module");
+const support_module_1 = require("./modules/support/support.module");
+const project_sharing_module_1 = require("./modules/project-sharing/project-sharing.module");
+const engine_module_1 = require("./modules/engine/engine.module");
+const connectors_module_1 = require("./modules/connectors/connectors.module");
+const templates_module_1 = require("./modules/templates/templates.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -103,6 +112,7 @@ exports.AppModule = AppModule = __decorate([
             }),
             database_module_1.DatabaseModule,
             security_module_1.SecurityModule,
+            mail_module_1.MailModule,
             auth_module_1.AuthModule,
             workspace_module_1.WorkspaceModule,
             webhooks_module_1.WebhooksModule,
@@ -114,6 +124,14 @@ exports.AppModule = AppModule = __decorate([
             ai_module_1.AiModule,
             dashboard_module_1.DashboardModule,
             users_module_1.UsersModule,
+            variables_module_1.VariablesModule,
+            tags_module_1.TagsModule,
+            ai_chat_module_1.AiChatModule,
+            support_module_1.SupportModule,
+            project_sharing_module_1.ProjectSharingModule,
+            engine_module_1.EngineModule,
+            connectors_module_1.ConnectorsModule,
+            templates_module_1.TemplatesModule,
         ],
         controllers: [app_controller_1.AppController],
     })

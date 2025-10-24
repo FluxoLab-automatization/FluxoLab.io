@@ -184,3 +184,4 @@ SET plan_name = 'trial',
     executions_limit = 1000,
     executions_used = 6
 WHERE id IN (SELECT id FROM workspaces LIMIT 1);
+

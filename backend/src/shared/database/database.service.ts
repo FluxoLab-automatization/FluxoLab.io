@@ -10,6 +10,16 @@ export class DatabaseService implements OnModuleDestroy {
     return this.pool;
   }
 
+  async query(text: string, params?: any[]): Promise<any[]> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(text, params);
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
   async onModuleDestroy(): Promise<void> {
     await this.pool.end();
   }

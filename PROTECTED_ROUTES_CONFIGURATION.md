@@ -164,3 +164,5 @@ frontend/src/
 - ✅ **Integração**: Frontend e backend conectados
 
 **Todas as rotas protegidas estão configuradas e funcionando!** 🎉
+
+

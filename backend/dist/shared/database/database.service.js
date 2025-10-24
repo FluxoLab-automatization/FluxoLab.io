@@ -24,6 +24,16 @@ let DatabaseService = class DatabaseService {
     getPool() {
         return this.pool;
     }
+    async query(text, params) {
+        const client = await this.pool.connect();
+        try {
+            const result = await client.query(text, params);
+            return result.rows;
+        }
+        finally {
+            client.release();
+        }
+    }
     async onModuleDestroy() {
         await this.pool.end();
     }

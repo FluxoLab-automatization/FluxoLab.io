@@ -9,12 +9,14 @@ import {
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useSessionStore } from '../stores/session.store';
-import CompanyLogo from '../assets/logo-empresa.png';
+// import CompanyLogo from '../assets/logo-empresa.png';
 import {
   beginOAuthFlow,
   buildOAuthUrl,
   type OAuthProvider,
 } from '../services/auth.service';
+import ForgotPasswordModal from '../components/auth/ForgotPasswordModal.vue';
+import VerifyCodeModal from '../components/auth/VerifyCodeModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -42,14 +44,19 @@ const registerError = ref<string | null>(null);
 const registerSuccess = ref<string | null>(null);
 const oauthError = ref<string | null>(null);
 
-const oauthLoading = ref<OAuthProvider | null>(null);
+    const oauthLoading = ref<OAuthProvider | null>(null);
 
-const isSubmitting = computed(
-  () => session.loading && mode.value === 'login',
-);
-const isRegistering = computed(
-  () => session.loading && mode.value === 'register',
-);
+    // Password Reset Logic
+    const showForgotPasswordModal = ref(false);
+    const showVerifyCodeModal = ref(false);
+    const identifierForReset = ref('');
+
+    const isSubmitting = computed(
+      () => session.loading && mode.value === 'login',
+    );
+    const isRegistering = computed(
+      () => session.loading && mode.value === 'register',
+    );
 
 const navLinks = [
   { label: 'Recursos', target: '#recursos' },
@@ -307,9 +314,23 @@ function closeNav() {
   navOpen.value = false;
 }
 
-function handleScroll() {
-  isScrolled.value = window.scrollY > 10;
-}
+    function handleScroll() {
+      isScrolled.value = window.scrollY > 10;
+    }
+
+    // Password Reset Functions
+    function openForgotPasswordModal() {
+      showForgotPasswordModal.value = true;
+    }
+
+    function handleForgotPasswordNext(identifier: string) {
+      identifierForReset.value = identifier;
+      showVerifyCodeModal.value = true;
+    }
+
+    function handleCodeVerified() {
+      router.push({ name: 'reset-password' });
+    }
 
 onMounted(() => {
   stageInterval = window.setInterval(() => {
@@ -336,7 +357,7 @@ onBeforeUnmount(() => {
     <header :class="['login-header', { 'login-header--scrolled': isScrolled }]">
       <div class="login-header__inner">
         <a href="#hero" class="login-brand" @click="closeNav">
-          <img :src="CompanyLogo" alt="FluxoLab logo" class="login-brand__logo" />
+              <div class="login-brand__logo">FL</div>
           <span class="login-brand__label">FluxoLab</span>
         </a>
 
@@ -797,16 +818,30 @@ onBeforeUnmount(() => {
       </section>
     </main>
 
-    <footer class="login-footer">
-      <p>© {{ currentYear }} FluxoLab — Automação sem atrito.</p>
-      <div class="login-footer__links">
-        <a href="#">Status</a>
-        <a href="#">Roadmap</a>
-        <a href="#">Central de ajuda</a>
+        <footer class="login-footer">
+          <p>© {{ currentYear }} FluxoLab — Automação sem atrito.</p>
+          <div class="login-footer__links">
+            <a href="#">Status</a>
+            <a href="#">Roadmap</a>
+            <a href="#">Central de ajuda</a>
+          </div>
+        </footer>
+
+        <!-- Password Reset Modals -->
+        <ForgotPasswordModal
+          :show="showForgotPasswordModal"
+          @update:show="showForgotPasswordModal = $event"
+          @next="handleForgotPasswordNext"
+        />
+        <VerifyCodeModal
+          :show="showVerifyCodeModal"
+          @update:show="showVerifyCodeModal = $event"
+          :identifier="identifierForReset"
+          @update:identifier="identifierForReset = $event"
+          @verified="handleCodeVerified"
+        />
       </div>
-    </footer>
-  </div>
-</template>
+    </template>
 
 <style scoped>
 .login-shell {

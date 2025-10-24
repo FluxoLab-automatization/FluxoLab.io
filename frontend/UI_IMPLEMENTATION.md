@@ -143,3 +143,4 @@ frontend/src/
 ```
 
 Todas as telas foram implementadas seguindo fielmente as imagens de referência, adaptando as cores para a paleta especificada e mantendo a funcionalidade e usabilidade originais.
+

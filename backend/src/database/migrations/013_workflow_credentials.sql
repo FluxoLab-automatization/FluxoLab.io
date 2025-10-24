@@ -85,3 +85,5 @@ CREATE POLICY workflow_credentials_delete_policy ON workflow_credentials
             WHERE wm.user_id = current_setting('app.current_user_id')::UUID
         )
     );
+
+

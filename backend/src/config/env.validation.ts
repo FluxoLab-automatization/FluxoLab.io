@@ -42,11 +42,11 @@ export const envSchema = z
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     
     // Email configuration
-    SMTP_HOST: z.string().optional(),
-    SMTP_PORT: z.coerce.number().int().positive().optional(),
-    SMTP_USER: z.string().optional(),
-    SMTP_PASSWORD: z.string().optional(),
-    SMTP_FROM: z.string().email().optional(),
+    SMTP_HOST: z.string().default('smtp.gmail.com'),
+    SMTP_PORT: z.coerce.number().int().positive().default(587),
+    SMTP_USER: z.string().default('fluxolab.contato@gmail.com'),
+    SMTP_PASS: z.string().optional(),
+    MAIL_FROM: z.string().default('FluxoLab Contato <fluxolab.contato@gmail.com>'),
     
     // File storage
     AWS_ACCESS_KEY_ID: z.string().optional(),

@@ -150,3 +150,5 @@ dashboard: {
 - ✅ **Navegação**: Todas as rotas protegidas funcionando
 
 **A aplicação FluxoLab está totalmente configurada e pronta para uso!** 🚀
+
+

@@ -37,11 +37,11 @@ export declare const envSchema: z.ZodObject<{
         info: "info";
         warn: "warn";
     }>>;
-    SMTP_HOST: z.ZodOptional<z.ZodString>;
-    SMTP_PORT: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
-    SMTP_USER: z.ZodOptional<z.ZodString>;
-    SMTP_PASSWORD: z.ZodOptional<z.ZodString>;
-    SMTP_FROM: z.ZodOptional<z.ZodString>;
+    SMTP_HOST: z.ZodDefault<z.ZodString>;
+    SMTP_PORT: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+    SMTP_USER: z.ZodDefault<z.ZodString>;
+    SMTP_PASS: z.ZodOptional<z.ZodString>;
+    MAIL_FROM: z.ZodDefault<z.ZodString>;
     AWS_ACCESS_KEY_ID: z.ZodOptional<z.ZodString>;
     AWS_SECRET_ACCESS_KEY: z.ZodOptional<z.ZodString>;
     AWS_REGION: z.ZodDefault<z.ZodString>;

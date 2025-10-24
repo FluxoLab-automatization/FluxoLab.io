@@ -19,6 +19,32 @@ export type RegisterPayload = {
   accessToken?: string;
 };
 
+export interface ForgotPasswordPayload {
+  identifier: string; // email ou CPF
+}
+
+export interface VerifyResetCodePayload {
+  identifier: string;
+  code: string;
+}
+
+export interface ResetPasswordPayload {
+  resetToken: string;
+  newPassword: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+export interface VerifyResetCodeResponse {
+  resetToken: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}
+
 export type OAuthProvider = 'google' | 'github';
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
@@ -76,4 +102,25 @@ export function beginOAuthFlow(provider: OAuthProvider, redirectPath?: string) {
 
   const url = buildOAuthUrl(provider, redirectPath);
   window.location.assign(url);
+}
+
+export async function forgotPassword(payload: ForgotPasswordPayload): Promise<ForgotPasswordResponse> {
+  return apiFetch<ForgotPasswordResponse>('/auth/password/forgot', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function verifyResetCode(payload: VerifyResetCodePayload): Promise<VerifyResetCodeResponse> {
+  return apiFetch<VerifyResetCodeResponse>('/auth/password/verify', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function resetPassword(payload: ResetPasswordPayload): Promise<ResetPasswordResponse> {
+  return apiFetch<ResetPasswordResponse>('/auth/password/reset', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }

@@ -135,3 +135,5 @@ curl http://localhost:5173/api/monitoring/health
 1. Usuários não autenticados são redirecionados para login
 2. Para criar usuário, use o endpoint de registro do backend
 3. Ou configure um usuário de teste no banco de dados
+
+

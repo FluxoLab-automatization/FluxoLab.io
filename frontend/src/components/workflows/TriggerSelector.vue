@@ -333,3 +333,4 @@ function selectTrigger(trigger: Trigger) {
   color: var(--accent);
 }
 </style>
+
