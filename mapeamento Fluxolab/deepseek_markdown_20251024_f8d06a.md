@@ -1,0 +1,3 @@
+- [ ] Revisão semanal de progresso
+- [ ] Ajuste de prioridades baseado em feedback
+- [ ] Planning da Sprint 2 na semana 2

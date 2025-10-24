@@ -7,7 +7,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 
 @Index(['runId'])
 @Index(['correlationId'])
 @Index(['traceId'])
-@Index(['createdAt'])
+@Index(['created_at'])
 export class SystemEvent {
   @PrimaryGeneratedColumn('uuid')
   id: string;

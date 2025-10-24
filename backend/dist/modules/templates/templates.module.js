@@ -8,29 +8,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TemplatesModule = void 0;
 const common_1 = require("@nestjs/common");
-const database_module_1 = require("../../shared/database/database.module");
+const typeorm_1 = require("@nestjs/typeorm");
 const templates_service_1 = require("./templates.service");
-const templates_controller_1 = require("./templates.controller");
+const entities_1 = require("./entities");
 const template_installs_service_1 = require("./template-installs.service");
-const template_installs_controller_1 = require("./template-installs.controller");
 let TemplatesModule = class TemplatesModule {
 };
 exports.TemplatesModule = TemplatesModule;
 exports.TemplatesModule = TemplatesModule = __decorate([
     (0, common_1.Module)({
-        imports: [database_module_1.DatabaseModule],
-        providers: [
-            templates_service_1.TemplatesService,
-            template_installs_service_1.TemplateInstallsService,
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([entities_1.Template, entities_1.TemplateVersion, entities_1.TemplateParam, entities_1.TemplateReview]),
         ],
-        controllers: [
-            templates_controller_1.TemplatesController,
-            template_installs_controller_1.TemplateInstallsController,
-        ],
-        exports: [
-            templates_service_1.TemplatesService,
-            template_installs_service_1.TemplateInstallsService,
-        ],
+        providers: [templates_service_1.TemplatesService, template_installs_service_1.TemplateInstallsService],
+        exports: [templates_service_1.TemplatesService, template_installs_service_1.TemplateInstallsService],
     })
 ], TemplatesModule);
 //# sourceMappingURL=templates.module.js.map

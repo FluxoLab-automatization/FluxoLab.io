@@ -3,7 +3,7 @@ import { AppConfig } from '../../config/env.validation';
 export declare class MailerService {
     private readonly config;
     private readonly logger;
-    private transporter;
+    private readonly transporter;
     constructor(config: ConfigService<AppConfig, true>);
     sendPasswordResetCode(to: string, name: string, code: string, expiresInMinutes?: number): Promise<void>;
     private buildPasswordResetEmailHtml;

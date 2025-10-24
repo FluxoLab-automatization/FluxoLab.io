@@ -1,4 +1,4 @@
-export declare class OauthToken {
+export declare class OAuthToken {
     id: string;
     connectionId: string;
     tokenType: string;

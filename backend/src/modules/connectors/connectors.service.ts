@@ -108,4 +108,38 @@ export class ConnectorsService {
     // Por enquanto, retorna sucesso
     return { success: true, message: 'Connection test successful' };
   }
+
+  // Métodos adicionais para o controller
+  async getConnectors(workspaceId: string, filters?: { category?: string; status?: string }) {
+    return this.findAll(workspaceId, filters);
+  }
+
+  async getConnector(id: string) {
+    return this.connectorRepository.findOne({
+      where: { id },
+      relations: ['versions', 'actions']
+    });
+  }
+
+  async createConnector(createConnectorDto: any) {
+    const connector = this.connectorRepository.create(createConnectorDto);
+    return this.connectorRepository.save(connector);
+  }
+
+  async updateConnector(id: string, updateConnectorDto: any) {
+    await this.connectorRepository.update(id, updateConnectorDto);
+    return this.getConnector(id);
+  }
+
+  async deleteConnector(id: string) {
+    return this.connectorRepository.delete(id);
+  }
+
+  async getConnectorActions(id: string) {
+    return this.getActions(id);
+  }
+
+  async testConnector(id: string, testData: any) {
+    return this.testConnection(id, testData);
+  }
 }

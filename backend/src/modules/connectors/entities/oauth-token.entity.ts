@@ -3,7 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 @Entity('oauth_tokens')
 @Index(['connectionId'])
 @Index(['expiresAt'])
-export class OauthToken {
+export class OAuthToken {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

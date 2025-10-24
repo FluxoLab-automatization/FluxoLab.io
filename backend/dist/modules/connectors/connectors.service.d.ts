@@ -23,4 +23,17 @@ export declare class ConnectorsService {
         success: boolean;
         message: string;
     }>;
+    getConnectors(workspaceId: string, filters?: {
+        category?: string;
+        status?: string;
+    }): Promise<Connector[]>;
+    getConnector(id: string): Promise<Connector | null>;
+    createConnector(createConnectorDto: any): Promise<Connector[]>;
+    updateConnector(id: string, updateConnectorDto: any): Promise<Connector | null>;
+    deleteConnector(id: string): Promise<import("typeorm").DeleteResult>;
+    getConnectorActions(id: string): Promise<ConnectorAction[]>;
+    testConnector(id: string, testData: any): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }

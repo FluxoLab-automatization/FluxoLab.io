@@ -1,13 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThanOrEqual } from 'typeorm';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { v4 as uuidv4 } from 'uuid';
 import { Execution, ExecutionStep, Workflow, WorkflowVersion } from '../../shared/entities';
 import { SystemEvent, IdempotencyKey, DistributedLock, RetryQueue } from './entities';
 import { EventProcessor } from './processors/event.processor';
-import { WorkflowProcessor } from './processors/workflow.processor';
 import { HumanTaskProcessor } from './processors/human-task.processor';
 import { EvidenceProcessor } from './processors/evidence.processor';
 import { UsageProcessor } from './processors/usage.processor';
@@ -47,7 +46,6 @@ export class EngineService {
     @InjectQueue('audit')
     private auditQueue: Queue,
     private eventProcessor: EventProcessor,
-    private workflowProcessor: WorkflowProcessor,
     private humanTaskProcessor: HumanTaskProcessor,
     private evidenceProcessor: EvidenceProcessor,
     private usageProcessor: UsageProcessor,
@@ -176,13 +174,13 @@ export class EngineService {
         throw new Error(`Workflow version ${versionId} not found`);
       }
 
-      // Processar nós do workflow
-      await this.workflowProcessor.processWorkflowNodes(
+      // Processar nós do workflow via fila
+      await this.workflowsQueue.add('process-workflow-nodes', {
         runId,
         version,
         triggerData,
         context
-      );
+      });
 
     } catch (error) {
       this.logger.error(`Failed to process workflow execution: ${error.message}`, error.stack);
@@ -500,7 +498,7 @@ export class EngineService {
   async processRetryQueue(): Promise<void> {
     const retryItems = await this.retryQueueRepository.find({
       where: {
-        nextRetryAt: { $lte: new Date() }
+        nextRetryAt: LessThanOrEqual(new Date())
       }
     });
 

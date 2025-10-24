@@ -212,7 +212,7 @@ exports.BrConnectorsService = BrConnectorsService = BrConnectorsService_1 = __de
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(entities_1.Connection)),
     __param(1, (0, typeorm_1.InjectRepository)(entities_1.ConnectionSecret)),
-    __param(2, (0, typeorm_1.InjectRepository)(entities_1.OauthToken)),
+    __param(2, (0, typeorm_1.InjectRepository)(entities_1.OAuthToken)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository])

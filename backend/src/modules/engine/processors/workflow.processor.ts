@@ -78,4 +78,35 @@ export class WorkflowProcessor {
       throw error;
     }
   }
+
+  async processWorkflowNodes(
+    runId: string,
+    version: any,
+    triggerData: any,
+    context: any
+  ): Promise<void> {
+    try {
+      this.logger.log(`Processing workflow nodes: ${runId}`);
+
+      // Implementar lógica de processamento de nós
+      // Percorrer nós do workflow e processar sequencialmente ou em paralelo
+      if (version.nodes && Array.isArray(version.nodes)) {
+        for (const node of version.nodes) {
+          await this.engineService.processNode(
+            runId,
+            node.id,
+            node,
+            triggerData,
+            context
+          );
+        }
+      }
+
+      this.logger.log(`Workflow nodes processed successfully: ${runId}`);
+
+    } catch (error) {
+      this.logger.error(`Failed to process workflow nodes ${runId}: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
 }

@@ -22,7 +22,6 @@ const uuid_1 = require("uuid");
 const entities_1 = require("../../shared/entities");
 const entities_2 = require("./entities");
 const event_processor_1 = require("./processors/event.processor");
-const workflow_processor_1 = require("./processors/workflow.processor");
 const human_task_processor_1 = require("./processors/human-task.processor");
 const evidence_processor_1 = require("./processors/evidence.processor");
 const usage_processor_1 = require("./processors/usage.processor");
@@ -43,13 +42,12 @@ let EngineService = EngineService_1 = class EngineService {
     usageQueue;
     auditQueue;
     eventProcessor;
-    workflowProcessor;
     humanTaskProcessor;
     evidenceProcessor;
     usageProcessor;
     auditProcessor;
     logger = new common_1.Logger(EngineService_1.name);
-    constructor(executionRepository, executionStepRepository, workflowRepository, workflowVersionRepository, systemEventRepository, idempotencyKeyRepository, distributedLockRepository, retryQueueRepository, eventsQueue, workflowsQueue, humanTasksQueue, evidenceQueue, usageQueue, auditQueue, eventProcessor, workflowProcessor, humanTaskProcessor, evidenceProcessor, usageProcessor, auditProcessor) {
+    constructor(executionRepository, executionStepRepository, workflowRepository, workflowVersionRepository, systemEventRepository, idempotencyKeyRepository, distributedLockRepository, retryQueueRepository, eventsQueue, workflowsQueue, humanTasksQueue, evidenceQueue, usageQueue, auditQueue, eventProcessor, humanTaskProcessor, evidenceProcessor, usageProcessor, auditProcessor) {
         this.executionRepository = executionRepository;
         this.executionStepRepository = executionStepRepository;
         this.workflowRepository = workflowRepository;
@@ -65,7 +63,6 @@ let EngineService = EngineService_1 = class EngineService {
         this.usageQueue = usageQueue;
         this.auditQueue = auditQueue;
         this.eventProcessor = eventProcessor;
-        this.workflowProcessor = workflowProcessor;
         this.humanTaskProcessor = humanTaskProcessor;
         this.evidenceProcessor = evidenceProcessor;
         this.usageProcessor = usageProcessor;
@@ -148,7 +145,12 @@ let EngineService = EngineService_1 = class EngineService {
             if (!version) {
                 throw new Error(`Workflow version ${versionId} not found`);
             }
-            await this.workflowProcessor.processWorkflowNodes(runId, version, triggerData, context);
+            await this.workflowsQueue.add('process-workflow-nodes', {
+                runId,
+                version,
+                triggerData,
+                context
+            });
         }
         catch (error) {
             this.logger.error(`Failed to process workflow execution: ${error.message}`, error.stack);
@@ -346,7 +348,7 @@ let EngineService = EngineService_1 = class EngineService {
     async processRetryQueue() {
         const retryItems = await this.retryQueueRepository.find({
             where: {
-                nextRetryAt: { $lte: new Date() }
+                nextRetryAt: (0, typeorm_2.LessThanOrEqual)(new Date())
             }
         });
         for (const item of retryItems) {
@@ -389,7 +391,6 @@ exports.EngineService = EngineService = EngineService_1 = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository, Object, Object, Object, Object, Object, Object, event_processor_1.EventProcessor,
-        workflow_processor_1.WorkflowProcessor,
         human_task_processor_1.HumanTaskProcessor,
         evidence_processor_1.EvidenceProcessor,
         usage_processor_1.UsageProcessor,

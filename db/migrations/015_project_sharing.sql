@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS shared_project_permissions (
     invited_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     invited_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     accepted_at TIMESTAMPTZ,
-    UNIQUE (shared_project_id, COALESCE(user_id::text, email))
+    UNIQUE (shared_project_id, user_id, email)
 );
 
 -- Tabela para logs de acesso

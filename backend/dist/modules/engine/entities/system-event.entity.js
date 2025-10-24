@@ -77,6 +77,6 @@ exports.SystemEvent = SystemEvent = __decorate([
     (0, typeorm_1.Index)(['runId']),
     (0, typeorm_1.Index)(['correlationId']),
     (0, typeorm_1.Index)(['traceId']),
-    (0, typeorm_1.Index)(['createdAt'])
+    (0, typeorm_1.Index)(['created_at'])
 ], SystemEvent);
 //# sourceMappingURL=system-event.entity.js.map

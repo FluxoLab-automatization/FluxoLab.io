@@ -184,7 +184,7 @@ INSERT INTO connectors (key, name, description, category, is_br_specific, compli
     ('esocial', 'eSocial', 'Sistema de Escrituração Digital das Obrigações Fiscais', 'finance', TRUE, ARRAY['lgpd', 'fiscal']),
     ('tiss', 'TISS', 'Padrão TISS para troca de informações de saúde suplementar', 'finance', TRUE, ARRAY['lgpd', 'ans']),
     ('glpi', 'GLPI', 'Sistema de gestão de chamados e ativos', 'crm', FALSE, ARRAY['lgpd']),
-    ('rd_station', 'RD Station', 'Plataforma de marketing digital', 'marketing', TRUE, ARRAY['lgpd']),
+    ('rd_station', 'RD Station', 'Plataforma de marketing digital', 'analytics', TRUE, ARRAY['lgpd']),
     ('totvs', 'TOTVS', 'Sistema ERP TOTVS', 'erp', TRUE, ARRAY['lgpd']),
     ('protheus', 'Protheus', 'Sistema ERP Protheus', 'erp', TRUE, ARRAY['lgpd']),
     ('sankhya', 'Sankhya', 'Sistema ERP Sankhya', 'erp', TRUE, ARRAY['lgpd']),

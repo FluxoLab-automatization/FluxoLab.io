@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Connection, ConnectionSecret, OauthToken } from './entities';
+import { Connection, ConnectionSecret, OAuthToken } from './entities';
 
 @Injectable()
 export class BrConnectorsService {
@@ -12,8 +12,8 @@ export class BrConnectorsService {
     private connectionRepository: Repository<Connection>,
     @InjectRepository(ConnectionSecret)
     private connectionSecretRepository: Repository<ConnectionSecret>,
-    @InjectRepository(OauthToken)
-    private oauthTokenRepository: Repository<OauthToken>,
+    @InjectRepository(OAuthToken)
+    private oauthTokenRepository: Repository<OAuthToken>,
   ) {}
 
   // PIX - Banco Central do Brasil

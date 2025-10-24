@@ -54,6 +54,21 @@ let WorkflowProcessor = WorkflowProcessor_1 = class WorkflowProcessor {
             throw error;
         }
     }
+    async processWorkflowNodes(runId, version, triggerData, context) {
+        try {
+            this.logger.log(`Processing workflow nodes: ${runId}`);
+            if (version.nodes && Array.isArray(version.nodes)) {
+                for (const node of version.nodes) {
+                    await this.engineService.processNode(runId, node.id, node, triggerData, context);
+                }
+            }
+            this.logger.log(`Workflow nodes processed successfully: ${runId}`);
+        }
+        catch (error) {
+            this.logger.error(`Failed to process workflow nodes ${runId}: ${error.message}`, error.stack);
+            throw error;
+        }
+    }
 };
 exports.WorkflowProcessor = WorkflowProcessor;
 __decorate([

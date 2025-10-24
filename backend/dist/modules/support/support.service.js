@@ -130,7 +130,7 @@ let SupportService = class SupportService {
         if (result.length === 0) {
             throw new common_1.NotFoundException('Ticket não encontrado');
         }
-        await this.recordTicketHistory(ticketId, userId, 'updated', 'ticket', null, null);
+        await this.recordTicketHistory(ticketId, userId, 'updated', null, null);
         return result[0];
     }
     async deleteTicket(workspaceId, userId, ticketId) {

@@ -4,18 +4,22 @@
 BEGIN;
 
 -- Tabela para evidence packages (prova de execução)
-CREATE TABLE IF NOT EXISTS evidence_packages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    run_id UUID NOT NULL REFERENCES executions(id) ON DELETE CASCADE,
-    package_type TEXT NOT NULL DEFAULT 'execution'
-        CHECK (package_type IN ('execution', 'approval', 'compliance', 'custom')),
-    manifest JSONB NOT NULL,
-    sha256 TEXT NOT NULL,
-    signature TEXT,
-    signed_at TIMESTAMPTZ,
-    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+-- Adicionar colunas se não existirem
+DO $$
+BEGIN
+    -- Adicionar coluna package_type se não existir
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'evidence_packages' AND column_name = 'package_type') THEN
+        ALTER TABLE evidence_packages ADD COLUMN package_type TEXT NOT NULL DEFAULT 'execution'
+            CHECK (package_type IN ('execution', 'approval', 'compliance', 'custom'));
+    END IF;
+    
+    -- Adicionar coluna is_verified se não existir
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'evidence_packages' AND column_name = 'is_verified') THEN
+        ALTER TABLE evidence_packages ADD COLUMN is_verified BOOLEAN NOT NULL DEFAULT FALSE;
+    END IF;
+END $$;
 
 -- Tabela para arquivos de evidence
 CREATE TABLE IF NOT EXISTS evidence_files (
@@ -200,66 +204,7 @@ CREATE TABLE IF NOT EXISTS integrity_checks (
     checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Índices para performance
-CREATE INDEX IF NOT EXISTS idx_evidence_packages_run ON evidence_packages (run_id);
-CREATE INDEX IF NOT EXISTS idx_evidence_packages_type ON evidence_packages (package_type);
-CREATE INDEX IF NOT EXISTS idx_evidence_packages_created_at ON evidence_packages (created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_evidence_files_package ON evidence_files (package_id);
-CREATE INDEX IF NOT EXISTS idx_evidence_files_type ON evidence_files (file_type);
-
-CREATE INDEX IF NOT EXISTS idx_audit_trails_tenant ON audit_trails (tenant_id);
-CREATE INDEX IF NOT EXISTS idx_audit_trails_workspace ON audit_trails (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_audit_trails_run ON audit_trails (run_id);
-CREATE INDEX IF NOT EXISTS idx_audit_trails_actor ON audit_trails (actor_type, actor_id);
-CREATE INDEX IF NOT EXISTS idx_audit_trails_entity ON audit_trails (entity_type, entity_id);
-CREATE INDEX IF NOT EXISTS idx_audit_trails_action ON audit_trails (action);
-CREATE INDEX IF NOT EXISTS idx_audit_trails_created_at ON audit_trails (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_audit_trails_correlation ON audit_trails (correlation_id);
-CREATE INDEX IF NOT EXISTS idx_audit_trails_trace ON audit_trails (trace_id);
-
-CREATE INDEX IF NOT EXISTS idx_data_retention_policies_tenant ON data_retention_policies (tenant_id);
-CREATE INDEX IF NOT EXISTS idx_data_retention_policies_workspace ON data_retention_policies (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_data_retention_policies_type ON data_retention_policies (data_type);
-CREATE INDEX IF NOT EXISTS idx_data_retention_policies_active ON data_retention_policies (is_active) WHERE is_active = TRUE;
-
-CREATE INDEX IF NOT EXISTS idx_data_cleanup_jobs_policy ON data_cleanup_jobs (policy_id);
-CREATE INDEX IF NOT EXISTS idx_data_cleanup_jobs_status ON data_cleanup_jobs (status);
-CREATE INDEX IF NOT EXISTS idx_data_cleanup_jobs_created_at ON data_cleanup_jobs (created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_consent_records_workspace ON consent_records (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_consent_records_subject ON consent_records (subject_id, subject_type);
-CREATE INDEX IF NOT EXISTS idx_consent_records_type ON consent_records (consent_type);
-CREATE INDEX IF NOT EXISTS idx_consent_records_status ON consent_records (consent_status);
-CREATE INDEX IF NOT EXISTS idx_consent_records_granted_at ON consent_records (granted_at);
-
-CREATE INDEX IF NOT EXISTS idx_erasure_requests_workspace ON right_to_erasure_requests (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_erasure_requests_subject ON right_to_erasure_requests (subject_id, subject_type);
-CREATE INDEX IF NOT EXISTS idx_erasure_requests_status ON right_to_erasure_requests (status);
-CREATE INDEX IF NOT EXISTS idx_erasure_requests_requested_at ON right_to_erasure_requests (requested_at);
-
-CREATE INDEX IF NOT EXISTS idx_data_access_logs_workspace ON data_access_logs (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_data_access_logs_subject ON data_access_logs (subject_id, subject_type);
-CREATE INDEX IF NOT EXISTS idx_data_access_logs_accessed_by ON data_access_logs (accessed_by);
-CREATE INDEX IF NOT EXISTS idx_data_access_logs_type ON data_access_logs (access_type);
-CREATE INDEX IF NOT EXISTS idx_data_access_logs_created_at ON data_access_logs (created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_data_masking_rules_workspace ON data_masking_rules (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_data_masking_rules_field ON data_masking_rules (field_name);
-CREATE INDEX IF NOT EXISTS idx_data_masking_rules_type ON data_masking_rules (field_type);
-CREATE INDEX IF NOT EXISTS idx_data_masking_rules_active ON data_masking_rules (is_active) WHERE is_active = TRUE;
-
-CREATE INDEX IF NOT EXISTS idx_data_masking_applications_rule ON data_masking_applications (rule_id);
-CREATE INDEX IF NOT EXISTS idx_data_masking_applications_run ON data_masking_applications (run_id);
-CREATE INDEX IF NOT EXISTS idx_data_masking_applications_applied_at ON data_masking_applications (applied_at);
-
-CREATE INDEX IF NOT EXISTS idx_digital_signatures_package ON digital_signatures (package_id);
-CREATE INDEX IF NOT EXISTS idx_digital_signatures_signer ON digital_signatures (signer_id);
-CREATE INDEX IF NOT EXISTS idx_digital_signatures_signed_at ON digital_signatures (signed_at);
-
-CREATE INDEX IF NOT EXISTS idx_integrity_checks_package ON integrity_checks (package_id);
-CREATE INDEX IF NOT EXISTS idx_integrity_checks_type ON integrity_checks (check_type);
-CREATE INDEX IF NOT EXISTS idx_integrity_checks_status ON integrity_checks (check_status);
 
 -- Função para gerar evidence package
 CREATE OR REPLACE FUNCTION generate_evidence_package(
@@ -366,5 +311,67 @@ BEGIN
     RETURN v_total_affected;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Índices para performance
+CREATE INDEX IF NOT EXISTS idx_evidence_packages_run ON evidence_packages (run_id);
+CREATE INDEX IF NOT EXISTS idx_evidence_packages_type ON evidence_packages (package_type);
+CREATE INDEX IF NOT EXISTS idx_evidence_packages_created_at ON evidence_packages (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_evidence_files_package ON evidence_files (package_id);
+CREATE INDEX IF NOT EXISTS idx_evidence_files_type ON evidence_files (file_type);
+
+CREATE INDEX IF NOT EXISTS idx_audit_trails_tenant ON audit_trails (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_audit_trails_workspace ON audit_trails (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_audit_trails_run ON audit_trails (run_id);
+CREATE INDEX IF NOT EXISTS idx_audit_trails_actor ON audit_trails (actor_type, actor_id);
+CREATE INDEX IF NOT EXISTS idx_audit_trails_entity ON audit_trails (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_audit_trails_action ON audit_trails (action);
+CREATE INDEX IF NOT EXISTS idx_audit_trails_created_at ON audit_trails (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_trails_correlation ON audit_trails (correlation_id);
+CREATE INDEX IF NOT EXISTS idx_audit_trails_trace ON audit_trails (trace_id);
+
+CREATE INDEX IF NOT EXISTS idx_data_retention_policies_tenant ON data_retention_policies (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_data_retention_policies_workspace ON data_retention_policies (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_data_retention_policies_type ON data_retention_policies (data_type);
+CREATE INDEX IF NOT EXISTS idx_data_retention_policies_active ON data_retention_policies (is_active) WHERE is_active = TRUE;
+
+-- Índices adicionais para outras tabelas
+CREATE INDEX IF NOT EXISTS idx_data_cleanup_jobs_policy ON data_cleanup_jobs (policy_id);
+CREATE INDEX IF NOT EXISTS idx_data_cleanup_jobs_status ON data_cleanup_jobs (status);
+CREATE INDEX IF NOT EXISTS idx_data_cleanup_jobs_created_at ON data_cleanup_jobs (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_consent_records_workspace ON consent_records (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_consent_records_subject ON consent_records (subject_id, subject_type);
+CREATE INDEX IF NOT EXISTS idx_consent_records_type ON consent_records (consent_type);
+CREATE INDEX IF NOT EXISTS idx_consent_records_status ON consent_records (consent_status);
+CREATE INDEX IF NOT EXISTS idx_consent_records_granted_at ON consent_records (granted_at);
+
+CREATE INDEX IF NOT EXISTS idx_erasure_requests_workspace ON right_to_erasure_requests (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_erasure_requests_subject ON right_to_erasure_requests (subject_id, subject_type);
+CREATE INDEX IF NOT EXISTS idx_erasure_requests_status ON right_to_erasure_requests (status);
+CREATE INDEX IF NOT EXISTS idx_erasure_requests_requested_at ON right_to_erasure_requests (requested_at);
+
+CREATE INDEX IF NOT EXISTS idx_data_access_logs_workspace ON data_access_logs (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_data_access_logs_subject ON data_access_logs (subject_id, subject_type);
+CREATE INDEX IF NOT EXISTS idx_data_access_logs_accessed_by ON data_access_logs (accessed_by);
+CREATE INDEX IF NOT EXISTS idx_data_access_logs_type ON data_access_logs (access_type);
+CREATE INDEX IF NOT EXISTS idx_data_access_logs_created_at ON data_access_logs (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_data_masking_rules_workspace ON data_masking_rules (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_data_masking_rules_field ON data_masking_rules (field_name);
+CREATE INDEX IF NOT EXISTS idx_data_masking_rules_type ON data_masking_rules (field_type);
+CREATE INDEX IF NOT EXISTS idx_data_masking_rules_active ON data_masking_rules (is_active) WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_data_masking_applications_rule ON data_masking_applications (rule_id);
+CREATE INDEX IF NOT EXISTS idx_data_masking_applications_run ON data_masking_applications (run_id);
+CREATE INDEX IF NOT EXISTS idx_data_masking_applications_applied_at ON data_masking_applications (applied_at);
+
+CREATE INDEX IF NOT EXISTS idx_digital_signatures_package ON digital_signatures (package_id);
+CREATE INDEX IF NOT EXISTS idx_digital_signatures_signer ON digital_signatures (signer_id);
+CREATE INDEX IF NOT EXISTS idx_digital_signatures_signed_at ON digital_signatures (signed_at);
+
+CREATE INDEX IF NOT EXISTS idx_integrity_checks_package ON integrity_checks (package_id);
+CREATE INDEX IF NOT EXISTS idx_integrity_checks_type ON integrity_checks (check_type);
+CREATE INDEX IF NOT EXISTS idx_integrity_checks_status ON integrity_checks (check_status);
 
 COMMIT;

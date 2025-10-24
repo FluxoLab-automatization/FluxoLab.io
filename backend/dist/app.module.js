@@ -18,6 +18,7 @@ const auth_module_1 = require("./modules/auth/auth.module");
 const workspace_module_1 = require("./modules/workspace/workspace.module");
 const webhooks_module_1 = require("./modules/webhooks/webhooks.module");
 const database_module_1 = require("./shared/database/database.module");
+const typeorm_module_1 = require("./shared/database/typeorm.module");
 const security_module_1 = require("./shared/security/security.module");
 const mail_module_1 = require("./shared/mail/mail.module");
 const monitoring_module_1 = require("./modules/monitoring/monitoring.module");
@@ -111,6 +112,7 @@ exports.AppModule = AppModule = __decorate([
                 },
             }),
             database_module_1.DatabaseModule,
+            typeorm_module_1.TypeOrmConfigModule,
             security_module_1.SecurityModule,
             mail_module_1.MailModule,
             auth_module_1.AuthModule,

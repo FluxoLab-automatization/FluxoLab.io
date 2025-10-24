@@ -137,3 +137,5 @@ curl http://localhost:5173/api/monitoring/health
 3. Ou configure um usuário de teste no banco de dados
 
 
+
+

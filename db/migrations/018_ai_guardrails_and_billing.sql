@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS rag_chunks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id UUID NOT NULL REFERENCES rag_documents(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    embedding VECTOR(1536), -- Para OpenAI ada-002
+    embedding BYTEA, -- Para OpenAI ada-002 (requer extensão pgvector para VECTOR)
     metadata JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { DatabaseModule } from './shared/database/database.module';
+import { TypeOrmConfigModule } from './shared/database/typeorm.module';
 import { SecurityModule } from './shared/security/security.module';
 import { MailModule } from './shared/mail/mail.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
@@ -108,6 +109,7 @@ import { TemplatesModule } from './modules/templates/templates.module';
       },
     }),
     DatabaseModule,
+    TypeOrmConfigModule,
     SecurityModule,
     MailModule,
     AuthModule,

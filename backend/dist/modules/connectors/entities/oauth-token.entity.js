@@ -9,9 +9,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OauthToken = void 0;
+exports.OAuthToken = void 0;
 const typeorm_1 = require("typeorm");
-let OauthToken = class OauthToken {
+let OAuthToken = class OAuthToken {
     id;
     connectionId;
     tokenType;
@@ -22,46 +22,46 @@ let OauthToken = class OauthToken {
     created_at;
     updated_at;
 };
-exports.OauthToken = OauthToken;
+exports.OAuthToken = OAuthToken;
 __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)('uuid'),
     __metadata("design:type", String)
-], OauthToken.prototype, "id", void 0);
+], OAuthToken.prototype, "id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'uuid' }),
     __metadata("design:type", String)
-], OauthToken.prototype, "connectionId", void 0);
+], OAuthToken.prototype, "connectionId", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 50 }),
     __metadata("design:type", String)
-], OauthToken.prototype, "tokenType", void 0);
+], OAuthToken.prototype, "tokenType", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'text' }),
     __metadata("design:type", String)
-], OauthToken.prototype, "accessToken", void 0);
+], OAuthToken.prototype, "accessToken", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
-], OauthToken.prototype, "refreshToken", void 0);
+], OAuthToken.prototype, "refreshToken", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'timestamp with time zone', nullable: true }),
     __metadata("design:type", Date)
-], OauthToken.prototype, "expiresAt", void 0);
+], OAuthToken.prototype, "expiresAt", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
-], OauthToken.prototype, "scope", void 0);
+], OAuthToken.prototype, "scope", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
-], OauthToken.prototype, "created_at", void 0);
+], OAuthToken.prototype, "created_at", void 0);
 __decorate([
     (0, typeorm_1.UpdateDateColumn)(),
     __metadata("design:type", Date)
-], OauthToken.prototype, "updated_at", void 0);
-exports.OauthToken = OauthToken = __decorate([
+], OAuthToken.prototype, "updated_at", void 0);
+exports.OAuthToken = OAuthToken = __decorate([
     (0, typeorm_1.Entity)('oauth_tokens'),
     (0, typeorm_1.Index)(['connectionId']),
     (0, typeorm_1.Index)(['expiresAt'])
-], OauthToken);
+], OAuthToken);
 //# sourceMappingURL=oauth-token.entity.js.map

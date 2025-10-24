@@ -168,7 +168,7 @@ export class SupportService {
     }
 
     // Registrar mudança no histórico
-    await this.recordTicketHistory(ticketId, userId, 'updated', 'ticket', null, null);
+    await this.recordTicketHistory(ticketId, userId, 'updated', null, null);
 
     return result[0];
   }

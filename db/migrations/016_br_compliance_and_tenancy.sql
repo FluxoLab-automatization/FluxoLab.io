@@ -155,9 +155,31 @@ CREATE INDEX IF NOT EXISTS idx_compliance_policies_tenant ON compliance_policies
 CREATE INDEX IF NOT EXISTS idx_policy_bindings_policy ON policy_bindings (policy_id);
 
 -- Inserir tenant padrão para workspaces existentes
-INSERT INTO tenants (name, region, compliance_level)
-VALUES ('FluxoLab Default', 'BR', 'lgpd')
-ON CONFLICT (name) DO NOTHING;
+-- Verificar se as colunas necessárias existem antes de inserir
+DO $$
+BEGIN
+    -- Verificar se a tabela tenants existe
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'tenants') THEN
+        -- Se a coluna region não existe, adicionar
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'tenants' AND column_name = 'region') THEN
+            ALTER TABLE tenants ADD COLUMN region TEXT NOT NULL DEFAULT 'BR';
+        END IF;
+        
+        -- Se a coluna compliance_level não existe, adicionar
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'tenants' AND column_name = 'compliance_level') THEN
+            ALTER TABLE tenants ADD COLUMN compliance_level TEXT NOT NULL DEFAULT 'standard'
+                CHECK (compliance_level IN ('standard', 'lgpd', 'ans', 'sox'));
+        END IF;
+        
+        -- Verificar se já existe um tenant com esse nome antes de inserir
+        IF NOT EXISTS (SELECT 1 FROM tenants WHERE name = 'FluxoLab Default') THEN
+            INSERT INTO tenants (name, region, compliance_level)
+            VALUES ('FluxoLab Default', 'BR', 'lgpd');
+        END IF;
+    END IF;
+END $$;
 
 -- Atualizar workspaces existentes para referenciar o tenant padrão
 UPDATE workspaces 

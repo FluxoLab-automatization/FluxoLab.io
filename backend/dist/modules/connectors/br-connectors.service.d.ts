@@ -1,11 +1,11 @@
 import { Repository } from 'typeorm';
-import { Connection, ConnectionSecret, OauthToken } from './entities';
+import { Connection, ConnectionSecret, OAuthToken } from './entities';
 export declare class BrConnectorsService {
     private connectionRepository;
     private connectionSecretRepository;
     private oauthTokenRepository;
     private readonly logger;
-    constructor(connectionRepository: Repository<Connection>, connectionSecretRepository: Repository<ConnectionSecret>, oauthTokenRepository: Repository<OauthToken>);
+    constructor(connectionRepository: Repository<Connection>, connectionSecretRepository: Repository<ConnectionSecret>, oauthTokenRepository: Repository<OAuthToken>);
     createPixPayment(connectionId: string, paymentData: {
         amount: number;
         description: string;

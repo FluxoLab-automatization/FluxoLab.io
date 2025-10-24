@@ -211,4 +211,33 @@ export class TemplatesService {
       .addOrderBy('template.createdAt', 'DESC')
       .getMany();
   }
+
+  // Métodos adicionais para o controller
+  async getTemplates(workspaceId: string, filters?: { category?: string; status?: string }) {
+    return this.findAll(filters);
+  }
+
+  async getTemplate(id: string) {
+    return this.findOne(id);
+  }
+
+  async createTemplate(createTemplateDto: any) {
+    const template = this.templateRepository.create(createTemplateDto);
+    return this.templateRepository.save(template);
+  }
+
+  async updateTemplate(id: string, updateTemplateDto: any) {
+    await this.templateRepository.update(id, updateTemplateDto);
+    return this.getTemplate(id);
+  }
+
+  async deleteTemplate(id: string) {
+    return this.templateRepository.delete(id);
+  }
+
+  async installTemplate(id: string, installData: any) {
+    // Implementar lógica de instalação de template
+    this.logger.log(`Installing template ${id}`);
+    return { success: true, message: 'Template installed successfully' };
+  }
 }

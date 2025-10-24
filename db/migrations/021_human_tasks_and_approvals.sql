@@ -198,68 +198,6 @@ CREATE TABLE IF NOT EXISTS human_task_sla (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Índices para performance
-CREATE INDEX IF NOT EXISTS idx_human_tasks_run ON human_tasks (run_id);
-CREATE INDEX IF NOT EXISTS idx_human_tasks_step ON human_tasks (step_id);
-CREATE INDEX IF NOT EXISTS idx_human_tasks_assigned_to ON human_tasks (assigned_to);
-CREATE INDEX IF NOT EXISTS idx_human_tasks_status ON human_tasks (status);
-CREATE INDEX IF NOT EXISTS idx_human_tasks_priority ON human_tasks (priority);
-CREATE INDEX IF NOT EXISTS idx_human_tasks_due_at ON human_tasks (due_at);
-CREATE INDEX IF NOT EXISTS idx_human_tasks_expires_at ON human_tasks (expires_at);
-CREATE INDEX IF NOT EXISTS idx_human_tasks_created_at ON human_tasks (created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_human_task_history_task ON human_task_history (task_id);
-CREATE INDEX IF NOT EXISTS idx_human_task_history_action ON human_task_history (action);
-CREATE INDEX IF NOT EXISTS idx_human_task_history_performed_by ON human_task_history (performed_by);
-CREATE INDEX IF NOT EXISTS idx_human_task_history_created_at ON human_task_history (created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_human_task_escalations_task ON human_task_escalations (task_id);
-CREATE INDEX IF NOT EXISTS idx_human_task_escalations_level ON human_task_escalations (escalation_level);
-CREATE INDEX IF NOT EXISTS idx_human_task_escalations_escalated_to ON human_task_escalations (escalated_to);
-
-CREATE INDEX IF NOT EXISTS idx_escalation_policies_workspace ON escalation_policies (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_escalation_policies_task_type ON escalation_policies (task_type);
-CREATE INDEX IF NOT EXISTS idx_escalation_policies_active ON escalation_policies (is_active) WHERE is_active = TRUE;
-
-CREATE INDEX IF NOT EXISTS idx_human_task_notifications_task ON human_task_notifications (task_id);
-CREATE INDEX IF NOT EXISTS idx_human_task_notifications_type ON human_task_notifications (notification_type);
-CREATE INDEX IF NOT EXISTS idx_human_task_notifications_recipient ON human_task_notifications (recipient_id);
-CREATE INDEX IF NOT EXISTS idx_human_task_notifications_status ON human_task_notifications (status);
-CREATE INDEX IF NOT EXISTS idx_human_task_notifications_channel ON human_task_notifications (channel);
-
-CREATE INDEX IF NOT EXISTS idx_notification_templates_workspace ON notification_templates (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_notification_templates_type ON notification_templates (notification_type);
-CREATE INDEX IF NOT EXISTS idx_notification_templates_channel ON notification_templates (channel);
-CREATE INDEX IF NOT EXISTS idx_notification_templates_active ON notification_templates (is_active) WHERE is_active = TRUE;
-
-CREATE INDEX IF NOT EXISTS idx_approvals_task ON approvals (task_id);
-CREATE INDEX IF NOT EXISTS idx_approvals_approver ON approvals (approver_id);
-CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals (status);
-CREATE INDEX IF NOT EXISTS idx_approvals_type ON approvals (approval_type);
-
-CREATE INDEX IF NOT EXISTS idx_approver_groups_workspace ON approver_groups (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_approver_groups_active ON approver_groups (is_active) WHERE is_active = TRUE;
-
-CREATE INDEX IF NOT EXISTS idx_approval_rules_workspace ON approval_rules (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_approval_rules_group ON approval_rules (approver_group_id);
-CREATE INDEX IF NOT EXISTS idx_approval_rules_user ON approval_rules (approver_user_id);
-CREATE INDEX IF NOT EXISTS idx_approval_rules_active ON approval_rules (is_active) WHERE is_active = TRUE;
-
-CREATE INDEX IF NOT EXISTS idx_digital_signatures_task ON digital_signatures (task_id);
-CREATE INDEX IF NOT EXISTS idx_digital_signatures_signer ON digital_signatures (signer_id);
-CREATE INDEX IF NOT EXISTS idx_digital_signatures_signed_at ON digital_signatures (signed_at);
-
-CREATE INDEX IF NOT EXISTS idx_dynamic_forms_workspace ON dynamic_forms (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_dynamic_forms_active ON dynamic_forms (is_active) WHERE is_active = TRUE;
-
-CREATE INDEX IF NOT EXISTS idx_form_responses_task ON form_responses (task_id);
-CREATE INDEX IF NOT EXISTS idx_form_responses_form ON form_responses (form_id);
-CREATE INDEX IF NOT EXISTS idx_form_responses_responder ON form_responses (responder_id);
-CREATE INDEX IF NOT EXISTS idx_form_responses_submitted_at ON form_responses (submitted_at);
-
-CREATE INDEX IF NOT EXISTS idx_human_task_sla_task ON human_task_sla (task_id);
-CREATE INDEX IF NOT EXISTS idx_human_task_sla_type ON human_task_sla (sla_type);
-CREATE INDEX IF NOT EXISTS idx_human_task_sla_status ON human_task_sla (status);
 
 -- Função para criar tarefa humana
 CREATE OR REPLACE FUNCTION create_human_task(
@@ -357,5 +295,68 @@ BEGIN
     RETURN v_escalation_count;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Índices para performance
+CREATE INDEX IF NOT EXISTS idx_human_tasks_run ON human_tasks (run_id);
+CREATE INDEX IF NOT EXISTS idx_human_tasks_step ON human_tasks (step_id);
+CREATE INDEX IF NOT EXISTS idx_human_tasks_assigned_to ON human_tasks (assigned_to);
+CREATE INDEX IF NOT EXISTS idx_human_tasks_status ON human_tasks (status);
+CREATE INDEX IF NOT EXISTS idx_human_tasks_priority ON human_tasks (priority);
+CREATE INDEX IF NOT EXISTS idx_human_tasks_due_at ON human_tasks (due_at);
+CREATE INDEX IF NOT EXISTS idx_human_tasks_expires_at ON human_tasks (expires_at);
+CREATE INDEX IF NOT EXISTS idx_human_tasks_created_at ON human_tasks (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_human_task_history_task ON human_task_history (task_id);
+CREATE INDEX IF NOT EXISTS idx_human_task_history_action ON human_task_history (action);
+CREATE INDEX IF NOT EXISTS idx_human_task_history_performed_by ON human_task_history (performed_by);
+CREATE INDEX IF NOT EXISTS idx_human_task_history_created_at ON human_task_history (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_human_task_escalations_task ON human_task_escalations (task_id);
+CREATE INDEX IF NOT EXISTS idx_human_task_escalations_level ON human_task_escalations (escalation_level);
+CREATE INDEX IF NOT EXISTS idx_human_task_escalations_escalated_to ON human_task_escalations (escalated_to);
+
+CREATE INDEX IF NOT EXISTS idx_escalation_policies_workspace ON escalation_policies (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_escalation_policies_task_type ON escalation_policies (task_type);
+CREATE INDEX IF NOT EXISTS idx_escalation_policies_active ON escalation_policies (is_active) WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_human_task_notifications_task ON human_task_notifications (task_id);
+CREATE INDEX IF NOT EXISTS idx_human_task_notifications_type ON human_task_notifications (notification_type);
+CREATE INDEX IF NOT EXISTS idx_human_task_notifications_recipient ON human_task_notifications (recipient_id);
+CREATE INDEX IF NOT EXISTS idx_human_task_notifications_status ON human_task_notifications (status);
+CREATE INDEX IF NOT EXISTS idx_human_task_notifications_channel ON human_task_notifications (channel);
+
+CREATE INDEX IF NOT EXISTS idx_notification_templates_workspace ON notification_templates (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_notification_templates_type ON notification_templates (notification_type);
+CREATE INDEX IF NOT EXISTS idx_notification_templates_channel ON notification_templates (channel);
+CREATE INDEX IF NOT EXISTS idx_notification_templates_active ON notification_templates (is_active) WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_approvals_task ON approvals (task_id);
+CREATE INDEX IF NOT EXISTS idx_approvals_approver ON approvals (approver_id);
+CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals (status);
+CREATE INDEX IF NOT EXISTS idx_approvals_type ON approvals (approval_type);
+
+CREATE INDEX IF NOT EXISTS idx_approver_groups_workspace ON approver_groups (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_approver_groups_active ON approver_groups (is_active) WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_approval_rules_workspace ON approval_rules (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_approval_rules_group ON approval_rules (approver_group_id);
+CREATE INDEX IF NOT EXISTS idx_approval_rules_user ON approval_rules (approver_user_id);
+CREATE INDEX IF NOT EXISTS idx_approval_rules_active ON approval_rules (is_active) WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_digital_signatures_task ON digital_signatures (task_id);
+CREATE INDEX IF NOT EXISTS idx_digital_signatures_signer ON digital_signatures (signer_id);
+CREATE INDEX IF NOT EXISTS idx_digital_signatures_signed_at ON digital_signatures (signed_at);
+
+CREATE INDEX IF NOT EXISTS idx_dynamic_forms_workspace ON dynamic_forms (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_dynamic_forms_active ON dynamic_forms (is_active) WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_form_responses_task ON form_responses (task_id);
+CREATE INDEX IF NOT EXISTS idx_form_responses_form ON form_responses (form_id);
+CREATE INDEX IF NOT EXISTS idx_form_responses_responder ON form_responses (responder_id);
+CREATE INDEX IF NOT EXISTS idx_form_responses_submitted_at ON form_responses (submitted_at);
+
+CREATE INDEX IF NOT EXISTS idx_human_task_sla_task ON human_task_sla (task_id);
+CREATE INDEX IF NOT EXISTS idx_human_task_sla_type ON human_task_sla (sla_type);
+CREATE INDEX IF NOT EXISTS idx_human_task_sla_status ON human_task_sla (status);
 
 COMMIT;

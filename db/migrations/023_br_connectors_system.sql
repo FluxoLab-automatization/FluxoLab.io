@@ -3,26 +3,78 @@
 
 BEGIN;
 
--- Tabela para conectores
-CREATE TABLE IF NOT EXISTS connectors (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    slug TEXT NOT NULL,
-    description TEXT,
-    category TEXT NOT NULL
-        CHECK (category IN ('banking', 'payment', 'communication', 'erp', 'crm', 'fiscal', 'health', 'retail', 'agro', 'hr')),
-    connector_type TEXT NOT NULL
-        CHECK (connector_type IN ('api', 'webhook', 'file', 'database', 'message_queue')),
-    icon_url TEXT,
-    documentation_url TEXT,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    is_public BOOLEAN NOT NULL DEFAULT FALSE,
-    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (workspace_id, slug)
-);
+-- Adicionar colunas necessárias à tabela connectors existente
+DO $$
+BEGIN
+    -- Adicionar coluna workspace_id se não existir
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'connectors' AND column_name = 'workspace_id') THEN
+        ALTER TABLE connectors ADD COLUMN workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE;
+        -- Atualizar registros existentes com workspace padrão
+        UPDATE connectors SET workspace_id = 'c0cc00a3-a2c1-4488-8c9c-33d145703019' WHERE workspace_id IS NULL;
+        ALTER TABLE connectors ALTER COLUMN workspace_id SET NOT NULL;
+    END IF;
+    
+    -- Adicionar coluna slug se não existir
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'connectors' AND column_name = 'slug') THEN
+        ALTER TABLE connectors ADD COLUMN slug TEXT;
+        -- Gerar slug baseado no name para registros existentes
+        UPDATE connectors SET slug = LOWER(REPLACE(REPLACE(name, ' ', '-'), '&', 'e')) WHERE slug IS NULL;
+        ALTER TABLE connectors ALTER COLUMN slug SET NOT NULL;
+    END IF;
+    
+    -- Adicionar coluna connector_type se não existir
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'connectors' AND column_name = 'connector_type') THEN
+        ALTER TABLE connectors ADD COLUMN connector_type TEXT NOT NULL DEFAULT 'api'
+            CHECK (connector_type IN ('api', 'webhook', 'file', 'database', 'message_queue'));
+    END IF;
+    
+    -- Adicionar coluna icon_url se não existir
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'connectors' AND column_name = 'icon_url') THEN
+        ALTER TABLE connectors ADD COLUMN icon_url TEXT;
+    END IF;
+    
+    -- Adicionar coluna documentation_url se não existir
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'connectors' AND column_name = 'documentation_url') THEN
+        ALTER TABLE connectors ADD COLUMN documentation_url TEXT;
+    END IF;
+    
+    -- Adicionar coluna is_active se não existir
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'connectors' AND column_name = 'is_active') THEN
+        ALTER TABLE connectors ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT TRUE;
+    END IF;
+    
+    -- Adicionar coluna is_public se não existir
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'connectors' AND column_name = 'is_public') THEN
+        ALTER TABLE connectors ADD COLUMN is_public BOOLEAN NOT NULL DEFAULT FALSE;
+    END IF;
+    
+    -- Adicionar coluna created_by se não existir
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'connectors' AND column_name = 'created_by') THEN
+        ALTER TABLE connectors ADD COLUMN created_by UUID REFERENCES users(id) ON DELETE SET NULL;
+    END IF;
+    
+    -- Atualizar constraint de categoria se necessário
+    IF EXISTS (SELECT 1 FROM information_schema.check_constraints 
+               WHERE constraint_name = 'connectors_category_check') THEN
+        ALTER TABLE connectors DROP CONSTRAINT connectors_category_check;
+    END IF;
+    ALTER TABLE connectors ADD CONSTRAINT connectors_category_check 
+        CHECK (category IN ('banking', 'payment', 'communication', 'erp', 'crm', 'fiscal', 'health', 'retail', 'agro', 'hr', 'analytics', 'marketing', 'finance'));
+    
+    -- Adicionar constraint única se não existir
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
+                   WHERE table_name = 'connectors' AND constraint_name = 'connectors_workspace_slug_key') THEN
+        ALTER TABLE connectors ADD CONSTRAINT connectors_workspace_slug_key UNIQUE (workspace_id, slug);
+    END IF;
+END $$;
 
 -- Tabela para versões de conectores
 CREATE TABLE IF NOT EXISTS connector_versions (
@@ -93,114 +145,54 @@ CREATE TABLE IF NOT EXISTS oauth_tokens (
 );
 
 -- Conectores BR específicos
-INSERT INTO connectors (workspace_id, name, slug, description, category, connector_type, is_public, created_by) VALUES
+INSERT INTO connectors (workspace_id, name, slug, description, category, connector_type, is_public, created_by, key) VALUES
 -- Banking & Payments
-('00000000-0000-0000-0000-000000000000', 'PIX - Banco Central', 'pix-bcb', 'Conector para PIX do Banco Central do Brasil', 'banking', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'WhatsApp Business API', 'whatsapp-business', 'Conector para WhatsApp Business API', 'communication', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'GLPI', 'glpi', 'Conector para GLPI (Gestionnaire Libre de Parc Informatique)', 'erp', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'NF-e/NFS-e', 'nfe-nfse', 'Conector para Nota Fiscal Eletrônica', 'fiscal', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Meta Leads', 'meta-leads', 'Conector para Meta Leads (Facebook/Instagram)', 'marketing', 'api', TRUE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'PIX - Banco Central', 'pix-bcb', 'Conector para PIX do Banco Central do Brasil', 'banking', 'api', TRUE, NULL, 'pix-bcb'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'WhatsApp Business API', 'whatsapp-business', 'Conector para WhatsApp Business API', 'communication', 'api', TRUE, NULL, 'whatsapp-business'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'GLPI', 'glpi', 'Conector para GLPI (Gestionnaire Libre de Parc Informatique)', 'erp', 'api', TRUE, NULL, 'glpi'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'NF-e/NFS-e', 'nfe-nfse', 'Conector para Nota Fiscal Eletrônica', 'fiscal', 'api', TRUE, NULL, 'nfe-nfse'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Meta Leads', 'meta-leads', 'Conector para Meta Leads (Facebook/Instagram)', 'marketing', 'api', TRUE, NULL, 'meta-leads'),
 
 -- ERPs Brasileiros
-('00000000-0000-0000-0000-000000000000', 'TOTVS Protheus', 'totvs-protheus', 'Conector para TOTVS Protheus', 'erp', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Sankhya', 'sankhya', 'Conector para Sankhya ERP', 'erp', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Omie', 'omie', 'Conector para Omie ERP', 'erp', 'api', TRUE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'TOTVS Protheus', 'totvs-protheus', 'Conector para TOTVS Protheus', 'erp', 'api', TRUE, NULL, 'totvs-protheus'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Sankhya', 'sankhya', 'Conector para Sankhya ERP', 'erp', 'api', TRUE, NULL, 'sankhya'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Omie', 'omie', 'Conector para Omie ERP', 'erp', 'api', TRUE, NULL, 'omie'),
 
 -- Bancos
-('00000000-0000-0000-0000-000000000000', 'Banco do Brasil', 'banco-brasil', 'Conector para Banco do Brasil', 'banking', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Itaú', 'itau', 'Conector para Itaú', 'banking', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Bradesco', 'bradesco', 'Conector para Bradesco', 'banking', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Caixa Econômica', 'caixa-economica', 'Conector para Caixa Econômica Federal', 'banking', 'api', TRUE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Banco do Brasil', 'banco-brasil', 'Conector para Banco do Brasil', 'banking', 'api', TRUE, NULL, 'banco-brasil'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Itaú', 'itau', 'Conector para Itaú', 'banking', 'api', TRUE, NULL, 'itau'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Bradesco', 'bradesco', 'Conector para Bradesco', 'banking', 'api', TRUE, NULL, 'bradesco'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Caixa Econômica', 'caixa-economica', 'Conector para Caixa Econômica Federal', 'banking', 'api', TRUE, NULL, 'caixa-economica'),
 
 -- Saúde
-('00000000-0000-0000-0000-000000000000', 'ANS - Agência Nacional de Saúde', 'ans', 'Conector para ANS', 'health', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'TISS - Troca de Informação em Saúde Suplementar', 'tiss', 'Conector para TISS', 'health', 'api', TRUE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'ANS - Agência Nacional de Saúde', 'ans', 'Conector para ANS', 'health', 'api', TRUE, NULL, 'ans'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'TISS - Troca de Informação em Saúde Suplementar', 'tiss', 'Conector para TISS', 'health', 'api', TRUE, NULL, 'tiss'),
 
 -- Varejo
-('00000000-0000-0000-0000-000000000000', 'Mercado Livre', 'mercado-livre', 'Conector para Mercado Livre', 'retail', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Shopee', 'shopee', 'Conector para Shopee', 'retail', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Magalu', 'magalu', 'Conector para Magazine Luiza', 'retail', 'api', TRUE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Mercado Livre', 'mercado-livre', 'Conector para Mercado Livre', 'retail', 'api', TRUE, NULL, 'mercado-livre'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Shopee', 'shopee', 'Conector para Shopee', 'retail', 'api', TRUE, NULL, 'shopee'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Magalu', 'magalu', 'Conector para Magazine Luiza', 'retail', 'api', TRUE, NULL, 'magalu'),
 
 -- Agro
-('00000000-0000-0000-0000-000000000000', 'Embrapa', 'embrapa', 'Conector para Embrapa', 'agro', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Conab', 'conab', 'Conector para Conab', 'agro', 'api', TRUE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Embrapa', 'embrapa', 'Conector para Embrapa', 'agro', 'api', TRUE, NULL, 'embrapa'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Conab', 'conab', 'Conector para Conab', 'agro', 'api', TRUE, NULL, 'conab'),
 
 -- RH
-('00000000-0000-0000-0000-000000000000', 'eSocial', 'esocial', 'Conector para eSocial', 'hr', 'api', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'FGTS', 'fgts', 'Conector para FGTS', 'hr', 'api', TRUE, NULL);
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'eSocial', 'esocial', 'Conector para eSocial', 'hr', 'api', TRUE, NULL, 'esocial'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'FGTS', 'fgts', 'Conector para FGTS', 'hr', 'api', TRUE, NULL, 'fgts')
+ON CONFLICT (workspace_id, slug) DO NOTHING;
 
 -- Versões dos conectores
-INSERT INTO connector_versions (connector_id, version, is_active, config_schema, auth_schema) 
+INSERT INTO connector_versions (connector_id, version, is_active, config_schema) 
 SELECT 
     c.id,
     '1.0.0',
     TRUE,
-    CASE c.slug
-        WHEN 'pix-bcb' THEN '{"type": "object", "properties": {"environment": {"type": "string", "enum": ["sandbox", "production"]}, "client_id": {"type": "string"}, "client_secret": {"type": "string"}}'::jsonb
-        WHEN 'whatsapp-business' THEN '{"type": "object", "properties": {"phone_number_id": {"type": "string"}, "access_token": {"type": "string"}, "webhook_verify_token": {"type": "string"}}'::jsonb
-        WHEN 'glpi' THEN '{"type": "object", "properties": {"base_url": {"type": "string"}, "username": {"type": "string"}, "password": {"type": "string"}}'::jsonb
-        WHEN 'nfe-nfse' THEN '{"type": "object", "properties": {"environment": {"type": "string", "enum": ["homologacao", "producao"]}, "certificate": {"type": "string"}, "certificate_password": {"type": "string"}}'::jsonb
-        ELSE '{"type": "object", "properties": {}}'::jsonb
-    END,
-    CASE c.slug
-        WHEN 'pix-bcb' THEN '{"type": "oauth2", "flows": {"authorizationCode": {"authorizationUrl": "https://pix.bcb.gov.br/oauth/authorize", "tokenUrl": "https://pix.bcb.gov.br/oauth/token"}}}'::jsonb
-        WHEN 'whatsapp-business' THEN '{"type": "bearer", "bearerFormat": "JWT"}'::jsonb
-        WHEN 'glpi' THEN '{"type": "basic"}'::jsonb
-        WHEN 'nfe-nfse' THEN '{"type": "certificate"}'::jsonb
-        ELSE '{"type": "apiKey", "in": "header", "name": "Authorization"}'::jsonb
-    END
-FROM connectors c;
-
--- Ações dos conectores
-INSERT INTO connector_actions (connector_id, action_name, action_type, description, input_schema, output_schema)
-SELECT 
-    c.id,
-    'webhook_received',
-    'trigger',
-    'Webhook recebido',
-    '{"type": "object", "properties": {"payload": {"type": "object"}}}'::jsonb,
-    '{"type": "object", "properties": {"event_type": {"type": "string"}, "data": {"type": "object"}}}'::jsonb
+    '{"type": "object", "properties": {}}'::jsonb
 FROM connectors c
-WHERE c.slug IN ('pix-bcb', 'whatsapp-business', 'meta-leads');
+WHERE c.workspace_id = 'c0cc00a3-a2c1-4488-8c9c-33d145703019';
 
--- Ações específicas por conector
-INSERT INTO connector_actions (connector_id, action_name, action_type, description, input_schema, output_schema)
-SELECT 
-    c.id,
-    CASE c.slug
-        WHEN 'pix-bcb' THEN 'create_pix_payment'
-        WHEN 'whatsapp-business' THEN 'send_message'
-        WHEN 'glpi' THEN 'create_ticket'
-        WHEN 'nfe-nfse' THEN 'generate_nfe'
-        WHEN 'meta-leads' THEN 'get_lead'
-        ELSE 'generic_action'
-    END,
-    'action',
-    CASE c.slug
-        WHEN 'pix-bcb' THEN 'Criar pagamento PIX'
-        WHEN 'whatsapp-business' THEN 'Enviar mensagem WhatsApp'
-        WHEN 'glpi' THEN 'Criar ticket GLPI'
-        WHEN 'nfe-nfse' THEN 'Gerar NF-e'
-        WHEN 'meta-leads' THEN 'Obter lead'
-        ELSE 'Ação genérica'
-    END,
-    CASE c.slug
-        WHEN 'pix-bcb' THEN '{"type": "object", "properties": {"amount": {"type": "number"}, "description": {"type": "string"}, "payer": {"type": "object"}}}'::jsonb
-        WHEN 'whatsapp-business' THEN '{"type": "object", "properties": {"to": {"type": "string"}, "message": {"type": "string"}, "type": {"type": "string"}}}'::jsonb
-        WHEN 'glpi' THEN '{"type": "object", "properties": {"title": {"type": "string"}, "description": {"type": "string"}, "priority": {"type": "number"}}}'::jsonb
-        WHEN 'nfe-nfse' THEN '{"type": "object", "properties": {"emitter": {"type": "object"}, "receiver": {"type": "object"}, "items": {"type": "array"}}}'::jsonb
-        WHEN 'meta-leads' THEN '{"type": "object", "properties": {"lead_id": {"type": "string"}}}'::jsonb
-        ELSE '{"type": "object", "properties": {}}'::jsonb
-    END,
-    CASE c.slug
-        WHEN 'pix-bcb' THEN '{"type": "object", "properties": {"payment_id": {"type": "string"}, "status": {"type": "string"}, "qr_code": {"type": "string"}}}'::jsonb
-        WHEN 'whatsapp-business' THEN '{"type": "object", "properties": {"message_id": {"type": "string"}, "status": {"type": "string"}}}'::jsonb
-        WHEN 'glpi' THEN '{"type": "object", "properties": {"ticket_id": {"type": "string"}, "status": {"type": "string"}}}'::jsonb
-        WHEN 'nfe-nfse' THEN '{"type": "object", "properties": {"nfe_id": {"type": "string"}, "status": {"type": "string"}, "xml": {"type": "string"}}}'::jsonb
-        WHEN 'meta-leads' THEN '{"type": "object", "properties": {"lead_data": {"type": "object"}}}'::jsonb
-        ELSE '{"type": "object", "properties": {"result": {"type": "object"}}}'::jsonb
-    END
-FROM connectors c;
+-- Ações dos conectores (removido para evitar erros de estrutura)
 
 -- Índices para performance
 CREATE INDEX IF NOT EXISTS idx_connectors_workspace ON connectors (workspace_id);
@@ -213,12 +205,12 @@ CREATE INDEX IF NOT EXISTS idx_connector_versions_connector ON connector_version
 CREATE INDEX IF NOT EXISTS idx_connector_versions_active ON connector_versions (is_active) WHERE is_active = TRUE;
 
 CREATE INDEX IF NOT EXISTS idx_connector_actions_connector ON connector_actions (connector_id);
-CREATE INDEX IF NOT EXISTS idx_connector_actions_type ON connector_actions (action_type);
-CREATE INDEX IF NOT EXISTS idx_connector_actions_active ON connector_actions (is_active) WHERE is_active = TRUE;
+-- CREATE INDEX IF NOT EXISTS idx_connector_actions_type ON connector_actions (action_type); -- Removido: coluna não existe
+-- CREATE INDEX IF NOT EXISTS idx_connector_actions_active ON connector_actions (is_active) WHERE is_active = TRUE; -- Removido: coluna não existe
 
 CREATE INDEX IF NOT EXISTS idx_connections_workspace ON connections (workspace_id);
 CREATE INDEX IF NOT EXISTS idx_connections_connector ON connections (connector_id);
-CREATE INDEX IF NOT EXISTS idx_connections_active ON connections (is_active) WHERE is_active = TRUE;
+-- CREATE INDEX IF NOT EXISTS idx_connections_active ON connections (is_active) WHERE is_active = TRUE; -- Removido: coluna não existe
 
 CREATE INDEX IF NOT EXISTS idx_connection_secrets_connection ON connection_secrets (connection_id);
 CREATE INDEX IF NOT EXISTS idx_connection_secrets_name ON connection_secrets (secret_name);

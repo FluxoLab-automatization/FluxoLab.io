@@ -208,62 +208,6 @@ CREATE TABLE IF NOT EXISTS usage_reports (
     generated_by UUID REFERENCES users(id)
 );
 
--- Índices para performance
-CREATE INDEX IF NOT EXISTS idx_usage_counters_workspace ON usage_counters (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_usage_counters_type ON usage_counters (counter_type);
-CREATE INDEX IF NOT EXISTS idx_usage_counters_resource ON usage_counters (resource_id);
-CREATE INDEX IF NOT EXISTS idx_usage_counters_period ON usage_counters (period_start, period_end);
-CREATE INDEX IF NOT EXISTS idx_usage_counters_created_at ON usage_counters (created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_workspace_quotas_workspace ON workspace_quotas (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_workspace_quotas_type ON workspace_quotas (quota_type);
-CREATE INDEX IF NOT EXISTS idx_workspace_quotas_reset ON workspace_quotas (next_reset_at);
-
-CREATE INDEX IF NOT EXISTS idx_pricing_components_type ON pricing_components (component_type);
-CREATE INDEX IF NOT EXISTS idx_pricing_components_active ON pricing_components (is_active) WHERE is_active = TRUE;
-
-CREATE INDEX IF NOT EXISTS idx_pricing_plans_type ON pricing_plans (plan_type);
-CREATE INDEX IF NOT EXISTS idx_pricing_plans_active ON pricing_plans (is_active) WHERE is_active = TRUE;
-
-CREATE INDEX IF NOT EXISTS idx_plan_pricing_plan ON plan_pricing (plan_id);
-CREATE INDEX IF NOT EXISTS idx_plan_pricing_component ON plan_pricing (component_id);
-
-CREATE INDEX IF NOT EXISTS idx_subscriptions_workspace ON subscriptions (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_plan ON subscriptions (plan_id);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions (status);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_period_end ON subscriptions (current_period_end);
-
-CREATE INDEX IF NOT EXISTS idx_invoices_workspace ON invoices (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_invoices_subscription ON invoices (subscription_id);
-CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices (status);
-CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices (due_date);
-CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices (invoice_number);
-
-CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items (invoice_id);
-CREATE INDEX IF NOT EXISTS idx_invoice_items_component ON invoice_items (component_id);
-
-CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments (invoice_id);
-CREATE INDEX IF NOT EXISTS idx_payments_status ON payments (status);
-CREATE INDEX IF NOT EXISTS idx_payments_method ON payments (payment_method);
-CREATE INDEX IF NOT EXISTS idx_payments_external_id ON payments (external_payment_id);
-
-CREATE INDEX IF NOT EXISTS idx_discount_coupons_code ON discount_coupons (coupon_code);
-CREATE INDEX IF NOT EXISTS idx_discount_coupons_active ON discount_coupons (is_active) WHERE is_active = TRUE;
-CREATE INDEX IF NOT EXISTS idx_discount_coupons_valid ON discount_coupons (valid_from, valid_until);
-
-CREATE INDEX IF NOT EXISTS idx_coupon_usage_coupon ON coupon_usage (coupon_id);
-CREATE INDEX IF NOT EXISTS idx_coupon_usage_workspace ON coupon_usage (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_coupon_usage_used_at ON coupon_usage (used_at);
-
-CREATE INDEX IF NOT EXISTS idx_usage_alerts_workspace ON usage_alerts (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_usage_alerts_quota ON usage_alerts (quota_id);
-CREATE INDEX IF NOT EXISTS idx_usage_alerts_type ON usage_alerts (alert_type);
-CREATE INDEX IF NOT EXISTS idx_usage_alerts_sent ON usage_alerts (is_sent) WHERE is_sent = FALSE;
-
-CREATE INDEX IF NOT EXISTS idx_usage_reports_workspace ON usage_reports (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_usage_reports_type ON usage_reports (report_type);
-CREATE INDEX IF NOT EXISTS idx_usage_reports_period ON usage_reports (period_start, period_end);
-CREATE INDEX IF NOT EXISTS idx_usage_reports_generated_at ON usage_reports (generated_at DESC);
 
 -- Função para incrementar contador de uso
 CREATE OR REPLACE FUNCTION increment_usage_counter(
@@ -444,5 +388,62 @@ $$ LANGUAGE plpgsql;
 
 -- Sequência para números de fatura
 CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START 1;
+
+-- Índices para performance
+CREATE INDEX IF NOT EXISTS idx_usage_counters_workspace ON usage_counters (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_usage_counters_type ON usage_counters (counter_type);
+CREATE INDEX IF NOT EXISTS idx_usage_counters_resource ON usage_counters (resource_id);
+CREATE INDEX IF NOT EXISTS idx_usage_counters_period ON usage_counters (period_start, period_end);
+CREATE INDEX IF NOT EXISTS idx_usage_counters_created_at ON usage_counters (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_workspace_quotas_workspace ON workspace_quotas (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_quotas_type ON workspace_quotas (quota_type);
+CREATE INDEX IF NOT EXISTS idx_workspace_quotas_reset ON workspace_quotas (next_reset_at);
+
+CREATE INDEX IF NOT EXISTS idx_pricing_components_type ON pricing_components (component_type);
+CREATE INDEX IF NOT EXISTS idx_pricing_components_active ON pricing_components (is_active) WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_pricing_plans_type ON pricing_plans (plan_type);
+CREATE INDEX IF NOT EXISTS idx_pricing_plans_active ON pricing_plans (is_active) WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_plan_pricing_plan ON plan_pricing (plan_id);
+CREATE INDEX IF NOT EXISTS idx_plan_pricing_component ON plan_pricing (component_id);
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_workspace ON subscriptions (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_plan ON subscriptions (plan_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions (status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_period_end ON subscriptions (current_period_end);
+
+CREATE INDEX IF NOT EXISTS idx_invoices_workspace ON invoices (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_subscription ON invoices (subscription_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices (status);
+CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices (due_date);
+CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices (invoice_number);
+
+CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items (invoice_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_items_component ON invoice_items (component_id);
+
+CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments (invoice_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments (status);
+CREATE INDEX IF NOT EXISTS idx_payments_method ON payments (payment_method);
+CREATE INDEX IF NOT EXISTS idx_payments_external_id ON payments (external_payment_id);
+
+CREATE INDEX IF NOT EXISTS idx_discount_coupons_code ON discount_coupons (coupon_code);
+CREATE INDEX IF NOT EXISTS idx_discount_coupons_active ON discount_coupons (is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_discount_coupons_valid ON discount_coupons (valid_from, valid_until);
+
+CREATE INDEX IF NOT EXISTS idx_coupon_usage_coupon ON coupon_usage (coupon_id);
+CREATE INDEX IF NOT EXISTS idx_coupon_usage_workspace ON coupon_usage (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_coupon_usage_used_at ON coupon_usage (used_at);
+
+CREATE INDEX IF NOT EXISTS idx_usage_alerts_workspace ON usage_alerts (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_usage_alerts_quota ON usage_alerts (quota_id);
+CREATE INDEX IF NOT EXISTS idx_usage_alerts_type ON usage_alerts (alert_type);
+CREATE INDEX IF NOT EXISTS idx_usage_alerts_sent ON usage_alerts (is_sent) WHERE is_sent = FALSE;
+
+CREATE INDEX IF NOT EXISTS idx_usage_reports_workspace ON usage_reports (workspace_id);
+CREATE INDEX IF NOT EXISTS idx_usage_reports_type ON usage_reports (report_type);
+CREATE INDEX IF NOT EXISTS idx_usage_reports_period ON usage_reports (period_start, period_end);
+CREATE INDEX IF NOT EXISTS idx_usage_reports_generated_at ON usage_reports (generated_at DESC);
 
 COMMIT;

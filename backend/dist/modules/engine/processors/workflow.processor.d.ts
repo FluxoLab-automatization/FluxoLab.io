@@ -21,4 +21,5 @@ export declare class WorkflowProcessor {
         triggerData: any;
         context: any;
     }>): Promise<void>;
+    processWorkflowNodes(runId: string, version: any, triggerData: any, context: any): Promise<void>;
 }

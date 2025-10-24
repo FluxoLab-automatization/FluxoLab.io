@@ -1,0 +1,5 @@
+- [ ] Criar board no Trello/Asana/Jira
+- [ ] Adicionar todas as tarefas da Sprint 1
+- [ ] Definir responsáveis para cada tarefa
+- [ ] Configurar reunião diária de 15min
+- [ ] Setup do ambiente de desenvolvimento

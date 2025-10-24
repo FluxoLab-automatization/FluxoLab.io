@@ -1,23 +1,19 @@
 import { Module } from '@nestjs/common';
-import { DatabaseModule } from '../../shared/database/database.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { TemplatesService } from './templates.service';
-import { TemplatesController } from './templates.controller';
+import {
+  Template,
+  TemplateVersion,
+  TemplateParam,
+  TemplateReview,
+} from './entities';
 import { TemplateInstallsService } from './template-installs.service';
-import { TemplateInstallsController } from './template-installs.controller';
 
 @Module({
-  imports: [DatabaseModule],
-  providers: [
-    TemplatesService,
-    TemplateInstallsService,
+  imports: [
+    TypeOrmModule.forFeature([Template, TemplateVersion, TemplateParam, TemplateReview]),
   ],
-  controllers: [
-    TemplatesController,
-    TemplateInstallsController,
-  ],
-  exports: [
-    TemplatesService,
-    TemplateInstallsService,
-  ],
+  providers: [TemplatesService, TemplateInstallsService],
+  exports: [TemplatesService, TemplateInstallsService],
 })
 export class TemplatesModule {}

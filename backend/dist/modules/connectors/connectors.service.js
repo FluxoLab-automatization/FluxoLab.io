@@ -92,6 +92,32 @@ let ConnectorsService = ConnectorsService_1 = class ConnectorsService {
         this.logger.log(`Testing connection for connector ${connectorId}`);
         return { success: true, message: 'Connection test successful' };
     }
+    async getConnectors(workspaceId, filters) {
+        return this.findAll(workspaceId, filters);
+    }
+    async getConnector(id) {
+        return this.connectorRepository.findOne({
+            where: { id },
+            relations: ['versions', 'actions']
+        });
+    }
+    async createConnector(createConnectorDto) {
+        const connector = this.connectorRepository.create(createConnectorDto);
+        return this.connectorRepository.save(connector);
+    }
+    async updateConnector(id, updateConnectorDto) {
+        await this.connectorRepository.update(id, updateConnectorDto);
+        return this.getConnector(id);
+    }
+    async deleteConnector(id) {
+        return this.connectorRepository.delete(id);
+    }
+    async getConnectorActions(id) {
+        return this.getActions(id);
+    }
+    async testConnector(id, testData) {
+        return this.testConnection(id, testData);
+    }
 };
 exports.ConnectorsService = ConnectorsService;
 exports.ConnectorsService = ConnectorsService = ConnectorsService_1 = __decorate([

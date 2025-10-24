@@ -3,7 +3,6 @@ import { Queue } from 'bull';
 import { Execution, ExecutionStep, Workflow, WorkflowVersion } from '../../shared/entities';
 import { SystemEvent, IdempotencyKey, DistributedLock, RetryQueue } from './entities';
 import { EventProcessor } from './processors/event.processor';
-import { WorkflowProcessor } from './processors/workflow.processor';
 import { HumanTaskProcessor } from './processors/human-task.processor';
 import { EvidenceProcessor } from './processors/evidence.processor';
 import { UsageProcessor } from './processors/usage.processor';
@@ -24,13 +23,12 @@ export declare class EngineService {
     private usageQueue;
     private auditQueue;
     private eventProcessor;
-    private workflowProcessor;
     private humanTaskProcessor;
     private evidenceProcessor;
     private usageProcessor;
     private auditProcessor;
     private readonly logger;
-    constructor(executionRepository: Repository<Execution>, executionStepRepository: Repository<ExecutionStep>, workflowRepository: Repository<Workflow>, workflowVersionRepository: Repository<WorkflowVersion>, systemEventRepository: Repository<SystemEvent>, idempotencyKeyRepository: Repository<IdempotencyKey>, distributedLockRepository: Repository<DistributedLock>, retryQueueRepository: Repository<RetryQueue>, eventsQueue: Queue, workflowsQueue: Queue, humanTasksQueue: Queue, evidenceQueue: Queue, usageQueue: Queue, auditQueue: Queue, eventProcessor: EventProcessor, workflowProcessor: WorkflowProcessor, humanTaskProcessor: HumanTaskProcessor, evidenceProcessor: EvidenceProcessor, usageProcessor: UsageProcessor, auditProcessor: AuditProcessor);
+    constructor(executionRepository: Repository<Execution>, executionStepRepository: Repository<ExecutionStep>, workflowRepository: Repository<Workflow>, workflowVersionRepository: Repository<WorkflowVersion>, systemEventRepository: Repository<SystemEvent>, idempotencyKeyRepository: Repository<IdempotencyKey>, distributedLockRepository: Repository<DistributedLock>, retryQueueRepository: Repository<RetryQueue>, eventsQueue: Queue, workflowsQueue: Queue, humanTasksQueue: Queue, evidenceQueue: Queue, usageQueue: Queue, auditQueue: Queue, eventProcessor: EventProcessor, humanTaskProcessor: HumanTaskProcessor, evidenceProcessor: EvidenceProcessor, usageProcessor: UsageProcessor, auditProcessor: AuditProcessor);
     startWorkflowExecution(workflowId: string, triggerData: any, context: {
         tenantId: string;
         workspaceId: string;

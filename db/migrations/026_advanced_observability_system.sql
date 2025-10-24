@@ -155,12 +155,12 @@ CREATE TABLE IF NOT EXISTS intelligent_alert_history (
 
 -- Dashboards padrão
 INSERT INTO dashboards (workspace_id, name, description, dashboard_type, is_default, created_by) VALUES
-('00000000-0000-0000-0000-000000000000', 'Visão Geral', 'Dashboard principal com métricas gerais', 'overview', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Workflows', 'Dashboard específico para workflows', 'workflows', FALSE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Execuções', 'Dashboard para monitoramento de execuções', 'executions', FALSE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Conectores', 'Dashboard para status dos conectores', 'connectors', FALSE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Uso e Custos', 'Dashboard para uso e custos', 'usage', FALSE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Alertas', 'Dashboard para alertas e notificações', 'alerts', FALSE, NULL);
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Visão Geral', 'Dashboard principal com métricas gerais', 'overview', TRUE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Workflows', 'Dashboard específico para workflows', 'workflows', FALSE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Execuções', 'Dashboard para monitoramento de execuções', 'executions', FALSE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Conectores', 'Dashboard para status dos conectores', 'connectors', FALSE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Uso e Custos', 'Dashboard para uso e custos', 'usage', FALSE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Alertas', 'Dashboard para alertas e notificações', 'alerts', FALSE, NULL);
 
 -- Widgets padrão para dashboard de visão geral
 INSERT INTO dashboard_widgets (dashboard_id, widget_type, title, description, position_x, position_y, width, height, config, query_config)
@@ -201,9 +201,9 @@ WHERE d.name = 'Visão Geral';
 
 -- SLAs padrão
 INSERT INTO slas (workspace_id, name, description, sla_type, target_value, measurement_period, created_by) VALUES
-('00000000-0000-0000-0000-000000000000', 'Disponibilidade do Sistema', 'SLA de disponibilidade geral do sistema', 'availability', 99.9, 'daily', NULL),
-('00000000-0000-0000-0000-000000000000', 'Latência de Execução', 'SLA de latência para execuções', 'latency', 5.0, 'daily', NULL),
-('00000000-0000-0000-0000-000000000000', 'Taxa de Erro', 'SLA de taxa de erro máxima', 'error_rate', 1.0, 'daily', NULL);
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Disponibilidade do Sistema', 'SLA de disponibilidade geral do sistema', 'availability', 99.9, 'daily', NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Latência de Execução', 'SLA de latência para execuções', 'latency', 5.0, 'daily', NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Taxa de Erro', 'SLA de taxa de erro máxima', 'error_rate', 1.0, 'daily', NULL);
 
 -- SLOs padrão
 INSERT INTO slos (sla_id, objective_name, target_percentage, measurement_window)
@@ -235,10 +235,10 @@ WHERE s.name = 'Taxa de Erro';
 
 -- Alertas inteligentes padrão
 INSERT INTO intelligent_alerts (workspace_id, alert_name, description, alert_type, conditions, severity, created_by) VALUES
-('00000000-0000-0000-0000-000000000000', 'Pico de Execuções', 'Detecta picos anômalos no número de execuções', 'anomaly', '{"metric": "executions_per_hour", "threshold": 3, "window": "1h"}', 'medium', NULL),
-('00000000-0000-0000-0000-000000000000', 'Aumento de Taxa de Erro', 'Detecta aumento na taxa de erro', 'trend', '{"metric": "error_rate", "trend": "increasing", "window": "1h"}', 'high', NULL),
-('00000000-0000-0000-0000-000000000000', 'Latência Alta', 'Detecta latência acima do normal', 'threshold', '{"metric": "avg_latency", "operator": ">", "value": 10}', 'high', NULL),
-('00000000-0000-0000-0000-000000000000', 'Padrão de Falhas', 'Detecta padrões de falhas recorrentes', 'pattern', '{"pattern": "consecutive_failures", "count": 5, "window": "30m"}', 'critical', NULL);
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Pico de Execuções', 'Detecta picos anômalos no número de execuções', 'anomaly', '{"metric": "executions_per_hour", "threshold": 3, "window": "1h"}', 'medium', NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Aumento de Taxa de Erro', 'Detecta aumento na taxa de erro', 'trend', '{"metric": "error_rate", "trend": "increasing", "window": "1h"}', 'high', NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Latência Alta', 'Detecta latência acima do normal', 'threshold', '{"metric": "avg_latency", "operator": ">", "value": 10}', 'high', NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Padrão de Falhas', 'Detecta padrões de falhas recorrentes', 'pattern', '{"pattern": "consecutive_failures", "count": 5, "window": "30m"}', 'critical', NULL);
 
 -- Índices para performance
 CREATE INDEX IF NOT EXISTS idx_dashboards_workspace ON dashboards (workspace_id);

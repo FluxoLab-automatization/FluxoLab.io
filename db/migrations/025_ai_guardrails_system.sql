@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS prompt_library (
     slug TEXT NOT NULL,
     description TEXT,
     category TEXT NOT NULL
-        CHECK (category IN ('general', 'health', 'retail', 'marketing', 'agro', 'accounting', 'hr', 'custom')),
+        CHECK (category IN ('general', 'analysis', 'workflow', 'generation', 'extraction', 'classification', 'workflow', 'custom')),
     tags TEXT[] DEFAULT '{}',
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     is_public BOOLEAN NOT NULL DEFAULT FALSE,
@@ -137,106 +137,78 @@ CREATE TABLE IF NOT EXISTS rag_indices (
 );
 
 -- Prompts padrão para verticals brasileiros
-INSERT INTO prompt_library (workspace_id, name, slug, description, category, is_public, created_by) VALUES
+INSERT INTO prompt_library (workspace_id, name, description, category, template, is_public, created_by) VALUES
 -- Saúde
-('00000000-0000-0000-0000-000000000000', 'Análise de Prontuário Médico', 'analise-prontuario-medico', 'Analisa prontuários médicos e extrai informações relevantes', 'health', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Classificação de CID-10', 'classificacao-cid10', 'Classifica diagnósticos usando CID-10', 'health', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Análise de TISS', 'analise-tiss', 'Analisa arquivos TISS para reembolso', 'health', TRUE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Análise de Prontuário Médico', 'Analisa prontuários médicos e extrai informações relevantes', 'analysis', 'Analise o prontuário médico fornecido e extraia as informações relevantes.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Classificação de CID-10', 'Classifica diagnósticos usando CID-10', 'analysis', 'Classifique o diagnóstico fornecido usando o código CID-10 apropriado.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Análise de TISS', 'Analisa arquivos TISS para reembolso', 'analysis', 'Analise o arquivo TISS fornecido para processamento de reembolso.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
 
 -- Marketing
-('00000000-0000-0000-0000-000000000000', 'Scoring de Leads', 'scoring-leads', 'Calcula score de leads baseado em dados', 'marketing', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Geração de Copy', 'geracao-copy', 'Gera copy para campanhas de marketing', 'marketing', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Análise de Sentimento', 'analise-sentimento', 'Analisa sentimento de comentários e reviews', 'marketing', TRUE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Scoring de Leads', 'Calcula score de leads baseado em dados', 'generation', 'Calcule o score do lead baseado nos dados fornecidos.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Geração de Copy', 'Gera copy para campanhas de marketing', 'generation', 'Gere copy persuasivo para a campanha de marketing especificada.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Análise de Sentimento', 'Analisa sentimento de comentários e reviews', 'generation', 'Analise o sentimento dos comentários e reviews fornecidos.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
 
 -- Contábil
-('00000000-0000-0000-0000-000000000000', 'Classificação de Despesas', 'classificacao-despesas', 'Classifica despesas por categoria contábil', 'accounting', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Análise de Balanço', 'analise-balanco', 'Analisa balanços e demonstrações contábeis', 'accounting', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Conciliação Bancária', 'conciliacao-bancaria', 'Auxilia na conciliação bancária', 'accounting', TRUE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Classificação de Despesas', 'Classifica despesas por categoria contábil', 'classification', 'Classifique a despesa fornecida pela categoria contábil apropriada.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Análise de Balanço', 'Analisa balanços e demonstrações contábeis', 'classification', 'Analise o balanço e demonstrações contábeis fornecidos.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Conciliação Bancária', 'Auxilia na conciliação bancária', 'classification', 'Auxilie na conciliação bancária com os dados fornecidos.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
 
 -- Varejo
-('00000000-0000-0000-0000-000000000000', 'Análise de Produtos', 'analise-produtos', 'Analisa produtos e sugere melhorias', 'retail', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Previsão de Demanda', 'previsao-demanda', 'Prevê demanda de produtos', 'retail', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Atendimento ao Cliente', 'atendimento-cliente', 'Atende clientes via chat', 'retail', TRUE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Análise de Produtos', 'Analisa produtos e sugere melhorias', 'workflow', 'Analise o produto fornecido e sugira melhorias.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Previsão de Demanda', 'Prevê demanda de produtos', 'workflow', 'Preveja a demanda do produto baseado nos dados históricos.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Atendimento ao Cliente', 'Atende clientes via chat', 'workflow', 'Atenda o cliente via chat de forma profissional e eficiente.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
 
 -- Agro
-('00000000-0000-0000-0000-000000000000', 'Análise de Solo', 'analise-solo', 'Analisa dados de solo e sugere cultivos', 'agro', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Monitoramento de Pragas', 'monitoramento-pragas', 'Identifica pragas e sugere tratamentos', 'agro', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Previsão Climática', 'previsao-climatica', 'Analisa dados climáticos para agricultura', 'agro', TRUE, NULL),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Análise de Solo', 'Analisa dados de solo e sugere cultivos', 'extraction', 'Analise os dados de solo fornecidos e sugira cultivos apropriados.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Monitoramento de Pragas', 'Identifica pragas e sugere tratamentos', 'extraction', 'Identifique as pragas e sugira tratamentos apropriados.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Previsão Climática', 'Analisa dados climáticos para agricultura', 'extraction', 'Analise os dados climáticos para auxiliar na agricultura.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
 
 -- RH
-('00000000-0000-0000-0000-000000000000', 'Análise de CV', 'analise-cv', 'Analisa currículos e extrai informações', 'hr', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Avaliação de Desempenho', 'avaliacao-desempenho', 'Auxilia na avaliação de desempenho', 'hr', TRUE, NULL),
-('00000000-0000-0000-0000-000000000000', 'Análise de eSocial', 'analise-esocial', 'Analisa eventos do eSocial', 'hr', TRUE, NULL);
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Análise de CV', 'Analisa currículos e extrai informações', 'workflow', 'Analise o currículo fornecido e extraia as informações relevantes.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Avaliação de Desempenho', 'Auxilia na avaliação de desempenho', 'workflow', 'Auxilie na avaliação de desempenho do funcionário.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Análise de eSocial', 'Analisa eventos do eSocial', 'workflow', 'Analise os eventos do eSocial fornecidos.', TRUE, '1357b80a-4acc-4b98-b4e8-8ab9a68b98ef');
 
 -- Versões dos prompts
-INSERT INTO prompt_versions (prompt_id, version, is_active, prompt_text, system_prompt, parameters, model_config, safety_config)
+INSERT INTO prompt_versions (prompt_id, version, template, variables, guardrails)
 SELECT 
     p.id,
-    '1.0.0',
-    TRUE,
-    CASE p.slug
-        WHEN 'analise-prontuario-medico' THEN 'Analise o seguinte prontuário médico e extraia as informações principais: {prontuario}\n\nExtraia:\n- Diagnósticos principais\n- Medicamentos prescritos\n- Exames solicitados\n- Observações importantes\n- Próximos passos recomendados'
-        WHEN 'scoring-leads' THEN 'Analise os seguintes dados do lead e calcule um score de 0 a 100:\n\nDados do lead: {lead_data}\n\nConsidere:\n- Qualidade do contato (email, telefone)\n- Interesse demonstrado\n- Perfil demográfico\n- Comportamento online\n- Fonte de origem\n\nRetorne apenas o score numérico e uma breve justificativa.'
-        WHEN 'classificacao-despesas' THEN 'Classifique a seguinte despesa de acordo com o plano de contas:\n\nDespesa: {despesa}\nValor: {valor}\nFornecedor: {fornecedor}\n\nClassifique em:\n- Conta contábil\n- Centro de custo\n- Categoria fiscal\n- Justificativa'
-        ELSE 'Execute a tarefa solicitada com os dados fornecidos: {input_data}'
-    END,
-    CASE p.slug
-        WHEN 'analise-prontuario-medico' THEN 'Você é um assistente médico especializado em análise de prontuários. Seja preciso, objetivo e mantenha confidencialidade total dos dados.'
-        WHEN 'scoring-leads' THEN 'Você é um especialista em marketing digital e análise de leads. Seja objetivo e baseie suas análises em dados concretos.'
-        WHEN 'classificacao-despesas' THEN 'Você é um contador especializado em classificação contábil. Siga rigorosamente as normas brasileiras de contabilidade.'
-        ELSE 'Você é um assistente especializado em automação de processos empresariais. Seja preciso e objetivo.'
-    END,
-    CASE p.slug
-        WHEN 'analise-prontuario-medico' THEN '{"prontuario": {"type": "string", "required": true, "description": "Texto do prontuário médico"}}'::jsonb
-        WHEN 'scoring-leads' THEN '{"lead_data": {"type": "object", "required": true, "description": "Dados do lead"}}'::jsonb
-        WHEN 'classificacao-despesas' THEN '{"despesa": {"type": "string", "required": true}, "valor": {"type": "number", "required": true}, "fornecedor": {"type": "string", "required": true}}'::jsonb
-        ELSE '{"input_data": {"type": "object", "required": true}}'::jsonb
-    END,
-    '{"model": "gpt-4", "temperature": 0.1, "max_tokens": 2000}'::jsonb,
-    '{"content_filter": true, "pii_detection": true, "bias_detection": true, "toxicity_detection": true}'::jsonb
-FROM prompt_library p;
+    1,
+    p.template,
+    '{}',
+    '{"max_tokens": 2000, "content_filter": true}'
+FROM prompt_library p
+WHERE p.workspace_id = 'c0cc00a3-a2c1-4488-8c9c-33d145703019';
 
 -- Coleções RAG padrão
-INSERT INTO rag_collections (workspace_id, name, description, embedding_model, created_by) VALUES
-('00000000-0000-0000-0000-000000000000', 'Documentação Técnica', 'Documentação técnica da FluxoLab', 'text-embedding-ada-002', NULL),
-('00000000-0000-0000-0000-000000000000', 'Base de Conhecimento LGPD', 'Base de conhecimento sobre LGPD', 'text-embedding-ada-002', NULL),
-('00000000-0000-0000-0000-000000000000', 'Normas Contábeis', 'Normas brasileiras de contabilidade', 'text-embedding-ada-002', NULL),
-('00000000-0000-0000-0000-000000000000', 'Regulamentações ANS', 'Regulamentações da Agência Nacional de Saúde', 'text-embedding-ada-002', NULL);
+INSERT INTO rag_collections (workspace_id, name, description, embedding_model) VALUES
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Documentação Técnica', 'Documentação técnica da FluxoLab', 'text-embedding-ada-002'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Base de Conhecimento LGPD', 'Base de conhecimento sobre LGPD', 'text-embedding-ada-002'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Normas Contábeis', 'Normas brasileiras de contabilidade', 'text-embedding-ada-002'),
+('c0cc00a3-a2c1-4488-8c9c-33d145703019', 'Regulamentações ANS', 'Regulamentações da Agência Nacional de Saúde', 'text-embedding-ada-002');
 
 -- Índices para performance
 CREATE INDEX IF NOT EXISTS idx_prompt_library_workspace ON prompt_library (workspace_id);
 CREATE INDEX IF NOT EXISTS idx_prompt_library_category ON prompt_library (category);
 CREATE INDEX IF NOT EXISTS idx_prompt_library_public ON prompt_library (is_public) WHERE is_public = TRUE;
-CREATE INDEX IF NOT EXISTS idx_prompt_library_active ON prompt_library (is_active) WHERE is_active = TRUE;
-CREATE INDEX IF NOT EXISTS idx_prompt_library_tags ON prompt_library USING GIN (tags);
 
 CREATE INDEX IF NOT EXISTS idx_prompt_versions_prompt ON prompt_versions (prompt_id);
-CREATE INDEX IF NOT EXISTS idx_prompt_versions_active ON prompt_versions (is_active) WHERE is_active = TRUE;
 
-CREATE INDEX IF NOT EXISTS idx_ai_runs_workspace ON ai_runs (workspace_id);
 CREATE INDEX IF NOT EXISTS idx_ai_runs_run ON ai_runs (run_id);
-CREATE INDEX IF NOT EXISTS idx_ai_runs_prompt ON ai_runs (prompt_id);
-CREATE INDEX IF NOT EXISTS idx_ai_runs_status ON ai_runs (status);
 CREATE INDEX IF NOT EXISTS idx_ai_runs_created_at ON ai_runs (created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_ai_eval_scores_run ON ai_eval_scores (ai_run_id);
-CREATE INDEX IF NOT EXISTS idx_ai_eval_scores_type ON ai_eval_scores (eval_type);
 CREATE INDEX IF NOT EXISTS idx_ai_eval_scores_score ON ai_eval_scores (score);
 
 CREATE INDEX IF NOT EXISTS idx_ai_redactions_run ON ai_redactions (ai_run_id);
 CREATE INDEX IF NOT EXISTS idx_ai_redactions_type ON ai_redactions (redaction_type);
 
 CREATE INDEX IF NOT EXISTS idx_rag_collections_workspace ON rag_collections (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_rag_collections_active ON rag_collections (is_active) WHERE is_active = TRUE;
 
 CREATE INDEX IF NOT EXISTS idx_rag_documents_collection ON rag_documents (collection_id);
-CREATE INDEX IF NOT EXISTS idx_rag_documents_processed ON rag_documents (is_processed) WHERE is_processed = TRUE;
 
 CREATE INDEX IF NOT EXISTS idx_rag_chunks_document ON rag_chunks (document_id);
-CREATE INDEX IF NOT EXISTS idx_rag_chunks_index ON rag_chunks (chunk_index);
 
 CREATE INDEX IF NOT EXISTS idx_rag_indices_collection ON rag_indices (collection_id);
-CREATE INDEX IF NOT EXISTS idx_rag_indices_built ON rag_indices (is_built) WHERE is_built = TRUE;
 
 -- Função para detectar PII
 CREATE OR REPLACE FUNCTION detect_pii(input_text TEXT)

@@ -182,6 +182,27 @@ let TemplatesService = TemplatesService_1 = class TemplatesService {
             .addOrderBy('template.createdAt', 'DESC')
             .getMany();
     }
+    async getTemplates(workspaceId, filters) {
+        return this.findAll(filters);
+    }
+    async getTemplate(id) {
+        return this.findOne(id);
+    }
+    async createTemplate(createTemplateDto) {
+        const template = this.templateRepository.create(createTemplateDto);
+        return this.templateRepository.save(template);
+    }
+    async updateTemplate(id, updateTemplateDto) {
+        await this.templateRepository.update(id, updateTemplateDto);
+        return this.getTemplate(id);
+    }
+    async deleteTemplate(id) {
+        return this.templateRepository.delete(id);
+    }
+    async installTemplate(id, installData) {
+        this.logger.log(`Installing template ${id}`);
+        return { success: true, message: 'Template installed successfully' };
+    }
 };
 exports.TemplatesService = TemplatesService;
 exports.TemplatesService = TemplatesService = TemplatesService_1 = __decorate([

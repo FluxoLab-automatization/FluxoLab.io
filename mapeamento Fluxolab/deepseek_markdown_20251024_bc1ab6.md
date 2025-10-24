@@ -1,0 +1,4 @@
+- [ ] Iniciar desenvolvimento das tarefas da Sprint 1
+- [ ] Configurar CI/CD pipeline
+- [ ] Setup ambiente de staging
+- [ ] Definir métricas de qualidade
