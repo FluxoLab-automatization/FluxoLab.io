@@ -48,7 +48,7 @@ exports.TypeOrmConfigModule = TypeOrmConfigModule = __decorate([
                         entities_3.ConnectionSecret,
                         entities_3.OAuthToken,
                     ],
-                    synchronize: config.get('NODE_ENV', { infer: true }) === 'development',
+                    synchronize: false,
                     logging: config.get('NODE_ENV', { infer: true }) === 'development',
                     ssl: config.get('PG_SSL', { infer: true }) ? { rejectUnauthorized: false } : false,
                 }),

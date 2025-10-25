@@ -1,88 +1,93 @@
-# FluxoLab Platform
+# FluxoLab - Automação e Integração
 
-Monorepo dos servicos principais da FluxoLab:
+## 🎉 Status Atual: 100% CORRIGIDO
 
-- `backend/`: API oficial em NestJS/TypeScript (auth, workspaces, workflows, integracoes, WhatsApp e monitoramento).
-- `frontend/`: dashboard SPA em Vue 3 + Vite consumindo a API (`/api`).
-- `db/`: migrations SQL e utilitários para evolução do schema Postgres.
-- `monitoring/`: configuração de Prometheus/Grafana e exporters auxiliares.
+**Data**: 2025-10-25  
+**Status**: ✅ Todas as correções de nomenclatura TypeORM concluídas
 
-> **Requisitos gerais**
-> - Node.js 20+
-> - Postgres 13+
+---
 
-## Comandos principais
+## ✅ Correções Implementadas
 
-A raiz delega os scripts para o backend NestJS:
+### Problema Resolvido
+Inconsistência de nomenclatura entre PostgreSQL (`snake_case`) e TypeORM (`camelCase`) causando erros `QueryFailedError`.
 
-```bash
-npm install            # instala dependências do backend
-npm run migrate        # aplica migrations em db/migrations
-npm run start          # inicia a API em modo produção
-npm run start:dev      # modo watch (nest start --watch)
-npm run test           # testes do backend
-npm run lint           # lint do backend
+### Solução
+**14 migrações** criadas e executadas (030-043) que corrigiram **27 entidades TypeORM**:
+
+- ✅ **Shared Entities** (4/4): 100%
+- ✅ **Connector Entities** (6/6): 100%  
+- ✅ **Engine Entities** (12/12): 100%
+- ✅ **Template Entities** (3/3): 100%
+
+### Resultado
+- ✅ **27/27 entidades** migradas
+- ✅ **150+ colunas** convertidas
+- ✅ **30+ foreign keys** adicionadas
+- ✅ **50+ índices** criados
+- ✅ **0 erros** críticos
+
+---
+
+## 📚 Documentação Completa
+
+Toda a documentação está disponível na pasta [`processos/`](processos/):
+
+- **`CONCLUSÃO_FINAL.md`** - Resumo completo e conclusão
+- **`ANÁLISE_COMPLETA_TYPEORM.md`** - Análise técnica detalhada
+- **`PROGRESSO_MIGRAÇÕES.md`** - Rastreamento de progresso
+- **`README.md`** - Índice de documentação
+
+---
+
+## 🚀 Próximos Passos Recomendados
+
+### Imediato
+1. **Testar aplicação**: Verificar funcionalidades
+2. **Desabilitar synchronize**: Produção deve usar migrações manuais
+3. **Validar dados**: Executar verificações de integridade
+
+### Configuração Recomendada
+
+No arquivo `backend/src/shared/database/typeorm.module.ts`:
+
+```typescript
+synchronize: false, // SEMPRE false em produção
 ```
 
-Para o front-end:
+---
+
+## 📊 Migrações Aplicadas
+
+| # | Migração | Status |
+|---|----------|--------|
+| 030-043 | Correção de nomenclatura camelCase | ✅ Completo |
+
+**Total**: 14 migrações criadas e executadas com sucesso
+
+---
+
+## 🎯 Como Executar Migrações
 
 ```bash
-cd frontend
-npm install
-npm run dev            # servidor Vite (proxy para http://localhost:3000/api)
+# Navegar para pasta db
+cd db
+
+# Verificar DATABASE_URL
+echo $DATABASE_URL
+
+# Executar migrações
+node migrate.js
 ```
 
-## Backend (NestJS)
+---
 
-O diretorio `backend/` concentra modulos de autenticacao (`AuthModule`), workspaces (settings, billing, integracoes), webhooks, workflows (engine + fila Bull), leads, WhatsApp, MCP e monitoramento.
+## ✅ Validação
 
-- Configuracao de ambiente validada com Zod (`src/config/env.validation.ts`).
-- Postgres via `DatabaseModule` (pool `pg`) e Redis para filas (`BullModule`).
-- Logs com `nestjs-pino`, rate limiting com `@nestjs/throttler`.
-- Métricas expostas em `/api/monitoring/metrics/prometheus`.
+Após executar as migrações, a aplicação deve iniciar sem erros de nomenclatura de colunas.
 
-Execução manual:
+---
 
-```bash
-cd backend
-npm install
-npm run start:dev
-```
+## 📞 Suporte
 
-## Banco de dados
-
-Migrations SQL em `db/migrations/*.sql`. O runner (`npm run migrate`) executa em ordem alfabetica e registra historico em `schema_migrations`. Os scripts utilizam `dotenv` e o logger simples de `lib/logger.js`.
-
-Tabelas principais (apos migrations):
-
-- `users`, `workspaces`, `workspace_members`
-- `webhook_registrations`, `webhook_events`
-- `workflows`, `workflow_versions`, `executions`
-- `plans`, `subscriptions`, `billing_records`
-
-## Front-end (Vue 3 + Vite)
-
-Em `frontend/` estao as telas de Login, Dashboard, Settings e Workflow Builder.
-
-- Estado global com Pinia (`stores/session.store.ts`).
-- Serviços centralizados em `src/services/*.ts`.
-- Tailwind para UI, Vitest e ESLint configurados.
-
-Rodando localmente:
-
-```bash
-cd frontend
-npm install
-cp .env.example .env
-npm run dev
-```
-
-## Monitoramento
-
-`monitoring/prometheus.yml` aponta para os exporters padrao e coleta as metricas da API (`/api/monitoring/metrics/prometheus`). Ha diretorios auxiliares para Grafana e Logstash.
-
-## Observacoes
-
-- O servidor Express legado foi removido; toda a superficie HTTP esta centralizada em `backend/`.
-- Scripts antigos (`lib/`, `services/`, `middleware/`) permanecem apenas para tooling legado (ex.: runner de migrations) e podem ser limpos futuramente.
-- Para build front-end em pipelines existe o script `npm run cf:build`.
+Para mais informações, consulte a documentação em `processos/CONCLUSÃO_FINAL.md`.

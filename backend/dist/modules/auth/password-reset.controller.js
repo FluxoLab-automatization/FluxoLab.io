@@ -71,7 +71,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PasswordResetController.prototype, "resetPassword", null);
 exports.PasswordResetController = PasswordResetController = __decorate([
-    (0, common_1.Controller)('auth/password'),
+    (0, common_1.Controller)('api/auth/password'),
     __metadata("design:paramtypes", [password_reset_service_1.PasswordResetService])
 ], PasswordResetController);
 //# sourceMappingURL=password-reset.controller.js.map

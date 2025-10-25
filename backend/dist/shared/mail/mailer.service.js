@@ -115,6 +115,15 @@ let MailerService = MailerService_1 = class MailerService {
         return `Bem-vindo, ${name}!\nSua conta no workspace ${workspaceName} foi criada.`;
     }
     async send(options) {
+        const smtpPass = this.config.get('SMTP_PASS', { infer: true });
+        if (!smtpPass && this.config.get('NODE_ENV', { infer: true }) === 'development') {
+            this.logger.warn(`⚠️  MODO DESENVOLVIMENTO: Email não enviado (SMTP_PASS não configurado)`);
+            this.logger.warn(`   Para: ${options.to}`);
+            this.logger.warn(`   Assunto: ${options.subject}`);
+            this.logger.warn(`   Conteúdo: ${options.text}`);
+            this.logger.warn(`   Configure SMTP_PASS no .env para enviar emails reais`);
+            return { messageId: 'dev-mock-' + Date.now() };
+        }
         try {
             const info = await this.transporter.sendMail({
                 from: this.config.get('MAIL_FROM', { infer: true }),

@@ -10,7 +10,7 @@ import {
   VerifyCodeResponseDto
 } from './dto/password-reset.dto';
 
-@Controller('auth/password')
+@Controller('api/auth/password')
 export class PasswordResetController {
   constructor(private readonly passwordResetService: PasswordResetService) {}
 

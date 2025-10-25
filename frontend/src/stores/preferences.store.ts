@@ -1,6 +1,8 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { i18n, DEFAULT_LOCALE } from '../i18n';
+import { fetchUserPreferences, updateUserLanguage, type UserPreferences } from '../services/preferences.service';
+import { useSessionStore } from './session.store';
 
 const LOCALE_STORAGE_KEY = 'fluxolab.locale';
 
@@ -44,30 +46,88 @@ function persistLocale(value: string) {
 export const usePreferencesStore = defineStore('preferences', () => {
   const locale = ref<AvailableLocale>(DEFAULT_LOCALE);
   const initialized = ref(false);
+  const loading = ref(false);
+  const backendPreferences = ref<UserPreferences | null>(null);
 
-  function applyLocale(nextLocale: string) {
+  const sessionStore = useSessionStore();
+
+  function applyLocale(nextLocale: string, persist = true) {
     i18n.global.locale.value = nextLocale;
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('lang', nextLocale);
     }
-    persistLocale(nextLocale);
+    if (persist) {
+      persistLocale(nextLocale);
+    }
   }
 
-  function initialize() {
+  /**
+   * Sincroniza o idioma com o backend
+   */
+  async function syncLanguageWithBackend(language: string): Promise<void> {
+    if (!sessionStore.token || !sessionStore.initialized) {
+      return;
+    }
+
+    try {
+      await updateUserLanguage(sessionStore.token, language);
+      console.log('Idioma sincronizado com o backend:', language);
+    } catch (error) {
+      console.error('Erro ao sincronizar idioma com o backend:', error);
+      // Não interrompe o fluxo, apenas loga o erro
+    }
+  }
+
+  /**
+   * Busca as preferências do backend
+   */
+  async function loadBackendPreferences(): Promise<void> {
+    if (!sessionStore.token || !sessionStore.initialized) {
+      return;
+    }
+
+    try {
+      const preferences = await fetchUserPreferences(sessionStore.token);
+      backendPreferences.value = preferences;
+
+      // Se o backend tem um idioma configurado, usa ele
+      if (preferences.language && isSupportedLocale(preferences.language)) {
+        locale.value = preferences.language;
+        applyLocale(preferences.language, false); // Não persiste aqui pois já veio do backend
+      }
+    } catch (error) {
+      console.error('Erro ao carregar preferências do backend:', error);
+      // Continua com a lógica local em caso de erro
+    }
+  }
+
+  async function initialize() {
     if (initialized.value) {
       return;
     }
 
+    // Primeiro carrega do localStorage como fallback rápido
     const stored = readStoredLocale();
     if (stored && isSupportedLocale(stored)) {
       locale.value = stored;
+      applyLocale(stored, false); // Já está no localStorage, não precisa persistir de novo
+    } else {
+      // Se não tem nada salvo, aplica o padrão
+      applyLocale(locale.value, false);
     }
 
-    applyLocale(locale.value);
+    // Depois tenta carregar do backend
+    loading.value = true;
+    try {
+      await loadBackendPreferences();
+    } finally {
+      loading.value = false;
+    }
+
     initialized.value = true;
   }
 
-  function setLocale(nextLocale: string) {
+  async function setLocale(nextLocale: string) {
     if (!isSupportedLocale(nextLocale)) {
       console.warn(`Locale "${nextLocale}" não é suportado.`);
       return;
@@ -78,7 +138,10 @@ export const usePreferencesStore = defineStore('preferences', () => {
     }
 
     locale.value = nextLocale;
-    applyLocale(nextLocale);
+    applyLocale(nextLocale, true); // Persiste no localStorage
+
+    // Sincroniza com o backend
+    await syncLanguageWithBackend(nextLocale);
   }
 
   const localeOptions = computed(() =>
@@ -91,7 +154,11 @@ export const usePreferencesStore = defineStore('preferences', () => {
   return {
     locale,
     localeOptions,
+    loading,
+    backendPreferences,
+    initialized,
     initialize,
     setLocale,
+    loadBackendPreferences,
   };
 });

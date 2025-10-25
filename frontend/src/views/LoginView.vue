@@ -328,7 +328,8 @@ function closeNav() {
       showVerifyCodeModal.value = true;
     }
 
-    function handleCodeVerified() {
+    function handleCodeVerified(resetToken: string) {
+      // O token já foi armazenado em sessionStore por verifyResetCode
       router.push({ name: 'reset-password' });
     }
 
@@ -624,7 +625,7 @@ onBeforeUnmount(() => {
                   <input v-model="remember" type="checkbox" />
                   <span>{{ t('auth.login.rememberMe') }}</span>
                 </label>
-                <a class="forgot" href="#">Esqueci minha senha</a>
+                <a class="forgot" href="#" @click.prevent="openForgotPasswordModal">Esqueci minha senha</a>
               </div>
 
               <div

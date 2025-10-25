@@ -96,6 +96,18 @@ export class MailerService {
     html: string;
     text: string;
   }): Promise<SMTPTransport.SentMessageInfo> {
+    // Em desenvolvimento sem configuração SMTP, apenas log
+    const smtpPass = this.config.get('SMTP_PASS', { infer: true });
+    if (!smtpPass && this.config.get('NODE_ENV', { infer: true }) === 'development') {
+      this.logger.warn(`⚠️  MODO DESENVOLVIMENTO: Email não enviado (SMTP_PASS não configurado)`);
+      this.logger.warn(`   Para: ${options.to}`);
+      this.logger.warn(`   Assunto: ${options.subject}`);
+      this.logger.warn(`   Conteúdo: ${options.text}`);
+      this.logger.warn(`   Configure SMTP_PASS no .env para enviar emails reais`);
+      // Retornar um objeto mock para não quebrar o fluxo
+      return { messageId: 'dev-mock-' + Date.now() } as SMTPTransport.SentMessageInfo;
+    }
+    
     try {
       const info = await this.transporter.sendMail({
         from: this.config.get('MAIL_FROM', { infer: true }),

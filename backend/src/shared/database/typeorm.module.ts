@@ -65,7 +65,7 @@ import {
           ConnectionSecret,
           OAuthToken,
         ],
-        synchronize: config.get('NODE_ENV', { infer: true }) === 'development',
+        synchronize: false, // SEMPRE desabilitar para usar migrações manuais
         logging: config.get('NODE_ENV', { infer: true }) === 'development',
         ssl: config.get('PG_SSL', { infer: true }) ? { rejectUnauthorized: false } : false,
       }),
